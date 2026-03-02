@@ -1,0 +1,21 @@
+name: data501
+channels:
+  - https://repo.anaconda.com/pkgs/main
+  - https://repo.anaconda.com/pkgs/r
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.11
+  - ipykernel
+  - pandas
+  - numpy
+  - matplotlib
+  - plotly
+  - dash
+  - statsmodels
+  - tensorflow
+  - notebook
+  - scipy
+  - pip:
+    - sparqlwrapper
+prefix: /Users/wilbur_elb/miniconda3/envs/data501

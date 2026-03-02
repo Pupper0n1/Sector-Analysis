@@ -1,0 +1,195 @@
+\documentclass{article}
+
+\usepackage[english]{babel}
+
+\usepackage[letterpaper,top=2cm,bottom=2cm,left=3cm,right=3cm,marginparwidth=1.75cm]{geometry}
+
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage[colorlinks=true, allcolors=blue]{hyperref}
+
+\title{\textbf{Interactive Dashboard for Analysis and Forecasting of Sector Performance in US Equity Markets}}
+\author{Ashton Frese, Karen Reyes González, Wilbur Elbouni}
+
+\begin{document}
+\maketitle
+
+
+% 
+\begin{abstract}
+\noindent This project aims to design an interactive dashboard that examines sector performance patterns and forecasts price trends among the major ETFs of the US equity sector. Leveraging decades of daily open-high-low-close-volume (OHLCV) data for five major US equity sectors: Technology (XLK), Energy (XLE), Financials (XLF), Healthcare (XLV), and Industrials (XLI) sourced from Stooq, alongside historical macro-event datasets from Wikidata. We will investigate how sector returns and volatility respond to significant macroeconomic events, such as Federal Reserve policy changes, geopolitical crises, and economic shocks. Employing both classical time-series models (ARIMA, GARCH) and advanced machine learning techniques (LSTM), we will generate forecasts for sector ETF prices and volatility, with careful analysis of changes in forecast accuracy around key events. The dashboard will allow users to visualize historical trends, event impacts, and model predictions, offering interactive tools to compare sector behaviour and highlight important macroeconomic episodes. This research proposes an accessible platform for exploring market dynamics and the challenges of financial forecasting, ultimately delivering key insights to users interested in financial markets and data science.
+\end{abstract}
+
+\section{Background}
+
+\subsection{Field Overview}
+Financial markets generate large volumes of high-frequency time-series data, which makes them a common use case for data science and statistical modelling \cite{cfadata2024}. Sector-based exchange-traded funds (ETFs) are a convenient means of analyzing equity market behaviour by categorizing similar firms based on the industry they belong to, for example, technology, energy, healthcare, and financials. The historical open-high-low-close-volume (OHLCV) data is widely used to study asset price behaviour and reactions to macroeconomic events. Previous studies in the field of quantitative finance have shown that significant macroeconomic events, such as monetary policy changes and geopolitical crises, can result in changes in returns and volatility in sectors. Publicly available financial datasets therefore offer a very good foundation for studying market dynamics and evaluating forecasting methodologies.
+
+% refernce "previous research"
+
+% Refernces for research gaps
+
+\subsection{Research Gaps}
+While their exists prior research that examines relationships between macroeconomic factors, individual stocks, and market indices, there is a lack of sector-level analysis, particularly one that compares the differentiated impacts of macro events across distinct industry groups \cite{alomari2024}. Most existing studies do not provide an intuitive or interactive way of visualizing and comparing these sector-specific effects over time. By focusing on sector ETFs and presenting findings through a dynamic dashboard, our project enables clearer, more specific exploration of how macroeconomic events shape various segments of the market. This approach improves both clarity and comparability of analysis, facilitating scenario evaluation and setting the stage for scalable models that can incorporate additional sectors or markets as needed.
+
+\subsection{Course Relevance}
+This project aligns closely with the objectives of DATA 501 by integrating core components of data science, including data acquisition, pre-processing, exploratory data analysis, statistical modelling, machine learning, and visualization. The use of large-scale financial time-series data supports the development of practical skills in data management and computational efficiency, while the implementation of forecasting models reflects key methodological concepts covered in the course. Furthermore, the interactive dashboard component demonstrates the importance of effective data communication and reproducibility in applied data science. Beyond its relevance to finance, the techniques employed in this project are broadly applicable to other domains that involve temporal data, such as economics, environmental monitoring, and public health analytics.
+
+\section{Research Questions}
+\begin{enumerate}
+    \item \textbf{Diagnostic (Variance Analysis):} Which US equity sectors exhibit the highest variance in daily returns during key macroeconomic events, and how can these distributional shifts be effectively visualized for exploration?
+    
+    \item \textbf{Descriptive (Trend Comparison):} What are the observable trends in volatility for major sector ETFs over time, and how do these distributions differ during periods of defined geopolitical versus monetary shocks?
+    
+    \item \textbf{Pattern Discovery (Anomaly Detection):} Can recurring anomalies in sector performance be systematically detected in association with specific event types?
+    
+    \item \textbf{Predictive (Model Evaluation):} How does the predictive accuracy (RMSE) of deep learning models (LSTM) compare to statistical baselines (ARIMA) when testing on ``shock'' periods versus ``stable'' periods?
+    
+    \item \textbf{Explanatory (Policy Analysis):} How does the correlation between sector returns and the Federal Funds Rate evolve during easing vs. tightening cycles, and can we visualize these shifts to identify rate-sensitive sectors?
+\end{enumerate}
+
+\section{Project Description}
+
+\subsection{Dataset Selection}
+To enable robust event-driven analysis, we will integrate two distinct data sources to construct a hybrid dataset:
+
+\begin{itemize}
+    \item \textbf{Primary Market Data (Stooq):} We will utilize daily historical OHLCV prices for major U.S. sector ETFs (e.g., XLK, XLF, XLE) sourced from Stooq \cite{stooq}. This dataset spans from 2005 through 2026, providing over two decades of market history. This range captures multiple distinct economic regimes, including the 2008 financial crisis, the 2010s oil glut, and the COVID-19 pandemic, allowing for robust training and testing of forecasting models across different market conditions.
+  
+    \item \textbf{Macroeconomic Indicators (Federal Funds Rate):} To quantify the impact of monetary policy on sector performance, we will integrate the \texttt{FEDFUNDS.csv} dataset containing the Effective Federal Funds Rate. This time-series data serves as a critical proxy for the risk-free rate and cost of capital. By merging this with the ETF data, we can statistically analyze how shifts in Federal Reserve policy (e.g., the zero-interest rate era vs. the 2022 tightening cycle) correlate with sector-specific volatility and price trends.
+    
+    \item \textbf{Event Metadata (Wikidata):} To capture major macroeconomic shocks, we will programmatically acquire structured event metadata using the \textbf{Wikidata Query Service} \cite{wikidata}. Unlike unstructured news APIs, Wikidata allows us to filter events by ``global importance'' using Wikipedia sitelink counts (keeping only events with $>10$ language links). This enables us to construct a noise-free dataset of critical shocks (e.g., ``2008 Financial Crisis,'' ``COVID-19 Pandemic'', and the ``2010s Oil Glut'') to power the dashboard's interactive drill-down features.
+
+\end{itemize}
+\subsection{Analysis Plan}
+Our methodology follows a structured pipeline designed to bridge statistical modeling with visual analytics:
+
+\begin{enumerate}
+    \item \textbf{Data Cleaning \& Integration:} We will align the Stooq price data with Wikidata event timestamps, handling missing values and adjusting for non-trading days to ensure a continuous time series.
+    
+    \item \textbf{Exploratory Data Analysis (EDA):} We will calculate statistical properties of sector returns (mean, variance) and visualize volatility clustering during known crisis periods to establish baseline behaviors.
+    
+    \item \textbf{Modeling:} We will implement rolling-window forecasting models, starting with classical statistical baselines (\textbf{ARIMA} for trends, \textbf{GARCH} for volatility) and progressing to deep learning approaches (\textbf{LSTM}) to capture non-linear dependencies \cite{syllabus}.
+    
+    \item \textbf{Drill-Down Analysis:} Following the visual analytics principles of Sahaf et al. \cite{sahaf2017}, we will isolate specific event windows (e.g., the 30 days following a shock) to analyze sector-specific sensitivity. This mirrors Sahaf's approach of allowing users to ``filter incidents'' to reveal underlying trends.
+\end{enumerate}
+
+\subsection{Tools and Techniques}
+The project will be implemented entirely in \textbf{Python}, utilizing the following libraries:
+\begin{itemize}
+    \item \textbf{Data Processing:} \texttt{Pandas} and \texttt{NumPy} for efficient time-series manipulation and memory-efficient loading.
+    \item \textbf{Data Acquisition:} \texttt{Requests} and \texttt{SPARQLWrapper} for retrieving and filtering event metadata from the Wikidata Query Service.
+    \item \textbf{Modeling:} \texttt{Statsmodels} for ARIMA/GARCH implementations and \texttt{TensorFlow/Keras} for LSTM sequence modeling.
+    \item \textbf{Visualization:} \texttt{Plotly} and \texttt{Dash} to build the interactive web-based dashboard.
+\end{itemize}
+
+\subsection{Visualization Framework}
+The core deliverable is an interactive dashboard designed to answer our Research Questions through ``Insight, not decoration''. Key views will include:
+
+\begin{itemize}
+    \item \textbf{Event Overlay Timeline:} A main price chart where major Wikidata events are automatically plotted as vertical markers, allowing users to visually correlate news with volatility spikes.
+    \item \textbf{Interactive Filtering:} Users can filter events by category (e.g., ``Geopolitical'' vs. ``Monetary'') to see how different sectors react to specific types of shocks.
+    \item \textbf{Drill-Down Zoom:} A specific interaction pattern enabling users to click on an event marker (e.g., ``COVID-19'') and immediately zoom the view to that time period for granular analysis, similar to the spatial drill-down features described in \textit{PipeVis}.
+\end{itemize}
+
+\subsection{Evaluation Metrics}
+\begin{itemize}
+    \item \textbf{Forecasting Performance:} Models will be evaluated using Root Mean Squared Error (RMSE) and Mean Absolute Error (MAE) on a strict hold-out test set (2023–2024) to avoid forward-looking bias.
+    \item \textbf{Visual Utility:} The dashboard's success will be measured by its ability to clearly reveal distinct sector trends (e.g., ``Energy vs. Tech'') during crisis periods, facilitating the qualitative discovery of market anomalies.
+\end{itemize}
+
+
+\section{Expected Outcomes and Deliverables}
+
+\subsection{Insights and Patterns}
+The project will uncover key trends, recurring patterns, and anomalies in US sector ETF performance, especially in response to major macroeconomic and geopolitical events. We expect to identify which sectors are most sensitive to specific types of events, temporal trends in returns and volatility, and how sector relationships evolve over time.
+
+\subsection{Interactive Visualizations}
+A user-friendly dashboard will allow users to dynamically explore sector performance across time, compare responses to selected events, and interact with forecast models and their confidence intervals. Visualizations will include time-series plots annotated with events, sector-versus-market comparisons, rolling correlation heatmaps, a news and events subsection, and performance dashboards that directly address our research questions.
+
+\subsection{Comprehensive Report}
+We will provide a clear, well-organized report summarizing our methodology, main insights, and model findings. The report will detail data collection and processing, analytical methods, findings for each research question, an assessment of forecasting performance, and a discussion of broader implications, along with recommendations for future research.
+
+\section{Project Value}
+This project contributes to the understanding of sector-level market behaviour by providing both descriptive and predictive insights into US equity sector responses to macroeconomic events, using freely available data and reproducible analytics. This interactive dashboard is a novel and intuitive tool for financial market exploration, which makes complex event-driven dynamics easily accessible and understandable for students, researchers, and practitioners.
+
+\vspace{0.5em}
+
+\noindent From an academic perspective, this project demonstrates the use of statistical and machine learning techniques for forecasting, validating models, and communicating results for time series forecasting problems. From an industry perspective, this project has the potential to help make portfolio adjustments, understand market risk, and improve investment timing.
+
+\vspace{0.5em}
+
+\noindent More generally, it illustrates the role of data science in helping to disentangle complex market dynamics, leading to more informed decision-making.
+
+\section{Implementation Plan}
+The project will be completed over an eight-week period, with defined milestones to ensure consistent progress and on-time completion.
+
+\begin{itemize}
+    \item \textbf{Weeks 1–2: Data Acquisition and Literature Review.} 
+    We will acquire the daily OHLCV data for the five major US sector ETFs (XLK, XLF, XLE, XLV, XLI) from Stooq \cite{stooq}. The Federal Funds Effective Rate will be obtained from the Federal Reserve Bank of St. Louis. In addition to those datasets, we will use SPARQL queries on Wikidata \cite{wikidata} to obtain a list of globally significant macroeconomic events. A literature review on financial time series forecasting and financial visual analytics (Sahaf et al. \cite{sahaf2017}) will be conducted for the initial design of the visualization.
+
+    \item \textbf{Weeks 3–4: Data Engineering and Exploratory Data Analysis.} 
+    We will then clean the data, check for missing days, and handle null values where applicable. Next comes integrating the datasets and aligning ETF daily prices with the Fed Funds rate and macro event dates. Finally, we will explore the volatility of the sector ETF returns over time and determine if there are any patterns. We will also compute rolling correlations to see how the relationship between interest-rate changes and sector returns shifts across different periods.
+
+    \item \textbf{Weeks 5–6: Model Development and Dashboard Prototyping.} 
+    We will develop rolling window-based forecasting models on sector ETF volatility using classical approaches such as ARIMA/GARCH, as well as deep learning-based LSTM models. Meanwhile, we will start working on the interactive dashboard using Dash, including the ``Event Overlay'' view and the ``Drill-Down'' view that will enable filtering based on Wikidata's macroeconomic events' categories such as geopolitical events.
+
+    \item \textbf{Weeks 7--8: Integration, Evaluation, and Reporting.}
+    All prototyping components will be consolidated into a single Plotly dashboard application. We will assess the accuracy of the model's forecasts using the Root Mean Squared Error (RMSE) on a 2024--2025 test set to avoid forward-looking bias. The results on interest rate sensitivity and model evaluation will then be compiled into the final report, completing the proposed project.
+
+
+\end{itemize}
+
+\section{Conclusion}
+
+The goal of this project is to build an interactive dashboard that incorporates historical analysis and predictive modelling techniques for the evaluation of the performance of the US equity sectors. This project also aims to examine the influence of major macroeconomic and geopolitical events on the performance and volatility of the US equity sectors, identify patterns and anomalies, and validate the effectiveness of time-series forecasting models for different market conditions. These elements of the project, therefore, provide a descriptive and predictive analysis of the performance of the US equity sectors.
+
+\vspace{0.5em}
+
+\noindent From a data science perspective, the project follows the fundamental techniques for the analysis of large-scale time-series data, which include data cleaning, exploration, rolling window model validation, and interactive visualization. This project also emphasizes the importance of effectively communicating the results of the models, which can be achieved through the integration of statistical and machine learning models within a visual environment. This project, therefore, demonstrates the application of data science techniques for the transformation of complex financial data into a reproducible, accessible, and analytically valuable tool for the evaluation and prediction of market behaviour.
+
+\section{Accountability for AI Tool Use}
+
+\subsection{Usage Context}
+AI tools (specifically Large Language Models) were employed in this proposal for three purposes:
+
+\begin{itemize}
+    \item \textbf{Refining Research Questions:} These tools aided in transforming broad research questions into well-defined statistical research questions by ensuring that these questions directly correlated with particular variables, distributions, and associative comparisons rather than causal relationships, as emphasized in the \textit{Foundations of Data Science} course materials.
+    
+    \item \textbf{Methodological Alignment:} AI tools were employed in crafting the Analysis Plan according to the visual analytics approach espoused by Sahaf et al. (2017) \cite{sahaf2017}, particularly in formulating the ``Drill-Down'' and ``Event Filtering'' characteristics of a dashboard.
+    
+    \item \textbf{Technical Formatting:} These tools were employed in crafting \LaTeX\ code for a bibliography and formatting citations for datasets (Stooq \cite{stooq}, FEDFUNDS) and course materials.
+\end{itemize}
+
+\subsection{Impact on Understanding}
+The employment of these tools has further enriched the authors' comprehension of the \textbf{Data Engineering} pillar. By repeatedly crafting the Dataset Selection section, these tools aided in further understanding the nuances between unstructured news APIs and structured knowledge graphs (Wikidata).
+
+\subsection{Ethical Use of AI}
+All AI-generated content was critically reviewed, revised, and validated by the authors to ensure accuracy, originality, and alignment with course objectives. AI tools were used as a support resource and did not replace independent thinking, methodological design, or interpretation. The final content reflects the authors' own understanding and decisions regarding project scope, research questions, and methodology.
+
+\subsection{Ethical Use and Validation}
+All AI-generated suggestions, particularly regarding model selection (ARIMA vs. LSTM) and dataset choices, were critically reviewed against the course syllabus and project rubric to ensure compliance. The authors maintain full responsibility for the final content, having independently verified that the proposed rolling-window methodology avoids forward-looking bias and that all references are accurate and relevant.
+
+\begin{thebibliography}{9}
+
+\bibitem{cfadata2024}
+CFA Institute, ``Why data science is a key skill for investment professionals,'' Mar. 22, 2024. [Online]. Available: https://www.cfainstitute.org/. [Accessed: Feb. 3, 2026].
+
+\bibitem{alomari2024}
+M. Alomari, R. Selmi, W. Mensi, H. Ko, S. H. Kang, ``Dynamic spillovers in higher moments and jumps across ETFs and economic and financial uncertainty factors in the context of successive shocks,'' \textit{The Quarterly Review of Economics and Finance}, vol. 93, pp. 210-228, 2024, doi: 10.1016/j.qref.2023.12.009.
+
+\bibitem{stooq}
+Stooq, ``Stooq Historical Market Data,'' [Online]. Available: https://stooq.com/db/h/. [Accessed: Feb. 3, 2026].
+
+\bibitem{wikidata}
+Wikidata, ``Wikidata Query Service,'' [Online]. Available: https://query.wikidata.org/. [Accessed: Feb. 3, 2026].
+
+\bibitem{syllabus}
+DATA 501, ``CAT-2.1: Stock Market Trend Forecasting Dashboard,'' Course Syllabus and Project Description, Winter 2026.
+
+\bibitem{sahaf2017}
+Z. Sahaf, M. Marbouti, R. C. Mota, H. Alemasoom, F. Maurer, and M. C. Sousa, ``PipeVis: Interactive visual exploration of pipeline incident data,'' in \textit{EuroVis Workshop on Visual Analytics (EuroVA)}, 2017, pp. 31–35.
+
+\end{thebibliography}
+
+\end{document}
