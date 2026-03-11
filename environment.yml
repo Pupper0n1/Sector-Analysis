@@ -16,6 +16,8 @@ dependencies:
   - tensorflow
   - notebook
   - scipy
+  - scikit-learn
   - pip:
     - sparqlwrapper
+    - arch
 prefix: /Users/wilbur_elb/miniconda3/envs/data501

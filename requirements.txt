@@ -10,6 +10,8 @@ matplotlib>=3.8.0
 
 # Modeling
 statsmodels>=0.14.0
+arch>=7.0.0
+scikit-learn>=1.4.0
 # Note: tensorflow requires Python <= 3.13
 tensorflow>=2.16.0
 

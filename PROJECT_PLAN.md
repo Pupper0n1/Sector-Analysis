@@ -20,19 +20,18 @@ This project aims to build an interactive dashboard that analyzes the historical
 - [x] Create a curated `events.csv` for macroeconomic and geopolitical shocks.
 - [x] Implement `src/preprocessing.py` to generate `master_sector_data.csv`.
 
-### Phase 2: Exploratory Data Analysis (EDA) (Status: IN PROGRESS)
-- [x] Create `notebooks/2_exploratory_analysis.ipynb`.
-- [ ] Visualize normalized price trends and annualized volatility.
-- [ ] Analyze rolling correlations between sectors and interest rates.
-- [ ] Identify heterogeneous sector responses to curated macro events.
+### Phase 2: Exploratory Data Analysis (EDA) (Status: COMPLETED)
+- [x] Visualize normalized price trends and annualized volatility.
+- [x] Analyze rolling correlations between sectors and interest rates.
+- [x] Identify heterogeneous sector responses to curated macro events.
 
-### Phase 3: Modeling & Forecasting
-- [ ] **Baseline Models:** Implement ARIMA (for price trends) and GARCH (for volatility) using `statsmodels`.
-- [ ] **Deep Learning:** Develop LSTM sequence models using `TensorFlow/Keras`.
-- [ ] **Validation:** Use a rolling-window approach with a hold-out test set (2024–2025).
-- [ ] **Evaluation:** Calculate RMSE/MAE for "stable" vs "shock" market regimes.
+### Phase 3: Modeling & Forecasting (Status: COMPLETED)
+- [x] **Baseline Models:** Implement ARIMA (for price trends) and GARCH (for volatility) using `statsmodels`.
+- [x] **Deep Learning:** Develop LSTM sequence models using `TensorFlow/Keras`.
+- [x] **Validation:** Use a rolling-window approach with a hold-out test set (2024–2025).
+- [x] **Evaluation:** Calculate RMSE/MAE for "stable" vs "shock" market regimes.
 
-### Phase 4: Interactive Dashboard Development
+### Phase 4: Interactive Dashboard Development (Status: IN PROGRESS)
 - [ ] **Backend:** Build a `Dash` (Python) application.
 - [ ] **Visualization:**
     - **Event Overlay:** Main price chart with vertical markers for curated events.
