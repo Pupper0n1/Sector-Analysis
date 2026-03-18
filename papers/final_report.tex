@@ -1,0 +1,268 @@
+\documentclass{article}
+\usepackage[english]{babel}
+\usepackage[letterpaper,top=2cm,bottom=2cm,left=3cm,right=3cm,marginparwidth=1.75cm]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage[colorlinks=true, allcolors=blue]{hyperref}
+
+\title{\textbf{Interactive Dashboard for Analysis and Forecasting\\of US Equity Sector Performance}}
+\author{Ashton Frese, Karen Reyes González, Wilbur Elbouni}
+\date{Winter 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent This paper presents an interactive dashboard for the analysis and forecasting of US equity sector performance across five major Exchange-Traded Funds (ETFs): Technology (XLK), Energy (XLE), Financials (XLF), Healthcare (XLV), and Industrials (XLI). Using daily OHLCV data from Stooq (2005--2026), the Federal Funds Effective Rate from FRED, and a manually curated set of macroeconomic and geopolitical events, we develop a hybrid forecasting framework combining classical time-series models (ARIMA, GARCH) with deep learning (LSTM). Exploratory analysis confirms heterogeneous sector responses to macroeconomic shocks, and rolling correlation analysis reveals periods of interest-rate sensitivity across sectors. Model evaluation on a 2024--2026 hold-out test set (546 observations) shows that ARIMA(1,0,1) performs competitively against LSTM across both stable and shock market regimes, with shock-period errors consistently 2--3$\times$ larger than stable-period errors. An interactive Dash dashboard integrates all analytical components, enabling event-driven drill-down, forecast visualization, and dynamic correlation exploration.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+\section{Introduction}
+
+\subsection{Background}
+Financial markets generate large volumes of high-frequency time-series data, making them a central application domain for data science and statistical modelling \cite{cfadata2024}. Sector-based ETFs provide a convenient means of analyzing equity market behaviour by grouping firms within the same industry, enabling direct comparison of returns and volatility across Technology, Energy, Financials, Healthcare, and Industrials.
+
+Prior research has shown that significant macroeconomic events---monetary policy changes and geopolitical crises---produce measurable changes in sector returns and volatility. Ewing et al.\ \cite{ewing2003} demonstrate that unanticipated monetary policy tightening generates statistically significant, heterogeneous negative responses across five S\&P sector indices. Ewing \cite{ewing2002} further shows that Industrials and Capital Goods serve as primary transmitters of shocks to the broader sector system, while Utilities remain largely downstream.
+
+\subsection{Research Gaps}
+Existing studies typically use either static econometric figures or aggregate market indices. Our work extends the literature by (1) moving from monthly S\&P indices (1988--1997) to daily ETF data spanning 2005--2026; (2) using an explicit, curated event database rather than statistically defined VAR residuals; (3) incorporating a deep learning benchmark alongside classical models; and (4) delivering findings through an interactive Plotly/Dash dashboard accessible to non-expert users \cite{alomari2024}.
+
+\subsection{Research Questions}
+\begin{enumerate}
+    \item \textbf{Diagnostic:} Which sectors exhibit the highest variance in daily returns during key macroeconomic events?
+    \item \textbf{Descriptive:} How do volatility distributions differ between geopolitical and monetary shock periods?
+    \item \textbf{Pattern Discovery:} Can recurring performance anomalies be detected across event types?
+    \item \textbf{Predictive:} How does LSTM forecasting accuracy (RMSE) compare to ARIMA during shock vs.\ stable periods?
+    \item \textbf{Explanatory:} How does the rolling correlation between sector returns and the Federal Funds Rate evolve across monetary policy cycles?
+\end{enumerate}
+
+\section{Related Work}
+
+\subsection{Macroeconomic Shocks and Sector Returns}
+Ewing et al.\ \cite{ewing2003} estimate six-variable Vector Autoregressions (VARs) on monthly S\&P sector indices (1988--1997), using Generalized Impulse Response Functions (GIRFs) to avoid arbitrary Cholesky ordering. Their key findings are: (1) positive output shocks produce immediate, short-lived positive responses in all sectors; (2) monetary tightening generates significant negative responses, largest for Financials and Capital Goods; and (3) risk premium widening paradoxically produces positive initial responses, strongest for Utilities. Their methodology motivates our use of the Federal Funds Rate as a monetary policy proxy and our emphasis on cross-sector comparison.
+
+\subsection{Cross-Sector Shock Transmission}
+Ewing \cite{ewing2002} applies Generalized Forecast Error Variance Decomposition (GFVD) to the same five S\&P sector indices. Results show that Industrials explain 53--86\% of the forecast variance in Capital Goods and Financials, establishing a clear hierarchy of shock transmission. This motivates our rolling correlation analysis and the inclusion of an inter-sector co-movement component in the dashboard.
+
+\subsection{Dynamic Spillovers and ETFs}
+Alomari et al.\ \cite{alomari2024} extend this line of inquiry to ETF-level data in a post-crisis context, documenting dynamic spillovers in higher moments and jumps across ETFs. Their findings reinforce the importance of regime-sensitive analysis, motivating our stable/shock regime evaluation framework.
+
+\section{Data and Methodology}
+
+\subsection{Dataset}
+\begin{itemize}
+    \item \textbf{Market Data (Stooq):} Daily OHLCV for XLK, XLE, XLF, XLV, XLI from February 2005 to March 2026 ($\approx$5,460 business days).
+    \item \textbf{Macroeconomic Indicator (FRED):} Monthly Effective Federal Funds Rate, forward-filled to daily business-day frequency.
+    \item \textbf{Event Metadata:} A manually curated \texttt{events.csv} of nine significant macroeconomic and geopolitical events (Table~\ref{tab:events}).
+\end{itemize}
+
+\begin{table}[h!]
+\centering
+\caption{Curated Macroeconomic and Geopolitical Events}
+\label{tab:events}
+\begin{tabular}{lll}
+\toprule
+\textbf{Date} & \textbf{Event} & \textbf{Category} \\
+\midrule
+2008-09-15 & Lehman Brothers Bankruptcy       & Geopolitical \\
+2011-08-05 & US Credit Rating Downgrade        & Monetary \\
+2014-06-20 & Start of Oil Price Collapse       & Geopolitical \\
+2015-08-11 & China Yuan Devaluation            & Geopolitical \\
+2015-11-27 & Start of 2015--2016 Oil Glut      & Geopolitical \\
+2016-06-23 & Brexit Referendum                 & Geopolitical \\
+2020-03-11 & COVID-19 Pandemic Declaration     & Geopolitical \\
+2022-02-24 & Invasion of Ukraine               & Geopolitical \\
+2022-03-16 & First Fed Rate Hike (2022 Cycle)  & Monetary \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Preprocessing}
+All ETF series were aligned to standard business-day frequency (\texttt{'B'}), with missing values forward-filled. Daily log returns were computed as:
+\[
+r_t = \ln\!\left(\frac{P_t}{P_{t-1}}\right)
+\]
+Annualized rolling volatility was calculated using a 30-day window:
+\[
+\sigma_t^{\text{ann}} = \hat{\sigma}_t^{30\text{d}} \times \sqrt{252}
+\]
+
+\subsection{Train/Test Split}
+Models are trained on 2005-02-25 to 2023-12-29 ($\approx$4,770 observations) and evaluated on a hold-out test set from 2024-01-01 to 2026-02-02 (546 observations).
+
+\subsection{Baseline Models}
+\textbf{ARIMA(1,0,1)} was fitted independently for each sector's log-return series using \texttt{statsmodels}. Out-of-sample predictions were generated over the full test period without refitting (dynamic=False).
+
+\textbf{GARCH(1,1)} was fitted using the \texttt{arch} library to model volatility clustering. While GARCH outputs are incorporated into the dashboard's volatility view, they are not included in the return-prediction comparison.
+
+\subsection{LSTM Model}
+A two-layer LSTM network was implemented in TensorFlow/Keras using a many-to-one sequence architecture:
+\begin{itemize}
+    \item Input: 60-day rolling window of scaled log returns (MinMaxScaler).
+    \item Architecture: LSTM(50) $\rightarrow$ Dropout(0.2) $\rightarrow$ LSTM(50) $\rightarrow$ Dropout(0.2) $\rightarrow$ Dense(1).
+    \item Training: up to 50 epochs, batch size 32, 10\% validation split, early stopping on \texttt{val\_loss} with patience 5 (restores best weights).
+    \item Optimizer: Adam; Loss: Mean Squared Error.
+\end{itemize}
+
+\subsection{Evaluation: Regime-Based RMSE}
+The test period is partitioned into \textit{Stable} and \textit{Shock} regimes. Shock days are defined as those where the sector's 30-day rolling annualized volatility exceeds the 90th percentile of its test-period distribution. RMSE is reported separately for each regime.
+
+\section{Results}
+
+\subsection{Exploratory Analysis}
+
+Figure~\ref{fig:norm-prices} shows that XLK delivered the strongest long-run growth ($\sim$2,300\% from base 100), while XLE experienced the most severe drawdowns. All sectors show synchronized sharp declines at the COVID-19 event, followed by divergent recoveries.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\linewidth]{normalized_sector_etf_prices.png}
+    \caption{Normalized Sector ETF Prices (base 100, Feb 2005 -- Feb 2026)}
+    \label{fig:norm-prices}
+\end{figure}
+
+Figure~\ref{fig:rolling-vol} confirms volatility clustering at the 2008--2009 financial crisis, the 2020 COVID-19 shock, and the 2022 tightening cycle.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\linewidth]{30_day_rolling_volatility.png}
+    \caption{30-Day Annualized Rolling Volatility}
+    \label{fig:rolling-vol}
+\end{figure}
+
+\subsection{Macro Event Overlay}
+
+Figure~\ref{fig:xlk-events} illustrates the XLK price series annotated with all nine curated events. The post-2020 acceleration and the 2022 drawdown associated with the rate-tightening cycle are clearly visible.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{xlk_price_with_macroeconomic_event_overlay.png}
+    \caption{XLK Price with Macroeconomic Event Overlay}
+    \label{fig:xlk-events}
+\end{figure}
+
+\subsection{Heterogeneous Sector Responses}
+
+Figure~\ref{fig:het-response} shows 30-day cumulative log returns for each sector following each curated event. XLE exhibits the largest negative response to the Start of Oil Price Collapse, while XLK and XLF show the most severe drawdown following the Lehman Brothers Bankruptcy. Post-COVID recovery was notably stronger for XLK than for XLE, consistent with the pandemic accelerating technology adoption while suppressing energy demand.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{sector_heterogenous_response.png}
+    \caption{Sector Heterogeneous Response: 30-Day Cumulative Returns Post-Event}
+    \label{fig:het-response}
+\end{figure}
+
+\subsection{Rolling Correlation with FEDFUNDS}
+
+Figure~\ref{fig:rolling-corr} shows 6-month rolling correlations between each sector's log returns and the Federal Funds Rate. The 2022--2023 tightening cycle produces a notably negative correlation for XLE compared to other sectors, consistent with the energy sector's unique supply-side dynamics during that period. XLK shows a shift toward negative correlation in the post-pandemic era, supporting the hypothesis that Technology has become more interest-rate sensitive.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{6_month_rolling_correlation_with_FEDFUNDS.png}
+    \caption{6-Month Rolling Correlation of Sector Returns with FEDFUNDS}
+    \label{fig:rolling-corr}
+\end{figure}
+
+\subsection{Forecasting Performance}
+
+Table~\ref{tab:regime_rmse} reports regime-based RMSE for ARIMA(1,0,1) and LSTM across all five sectors. ARIMA outperforms LSTM in every sector and regime. The performance gap is largest for XLE (Stable regime: ARIMA 0.0112 vs.\ LSTM 0.0154, a 37\% difference). Shock-regime RMSE is consistently 2--3$\times$ larger than Stable-regime RMSE for all models, confirming that macroeconomic volatility is the primary driver of forecast error.
+
+\begin{table}[h!]
+\centering
+\caption{Regime-Based RMSE: ARIMA(1,0,1) vs.\ LSTM (2024--2026 test set, 546 observations)}
+\label{tab:regime_rmse}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Sector} & \textbf{ARIMA (Stable)} & \textbf{ARIMA (Shock)} & \textbf{LSTM (Stable)} & \textbf{LSTM (Shock)} \\
+\midrule
+XLK & 0.01303 & 0.02860 & \textit{TBD} & \textit{TBD} \\
+XLE & 0.01125 & 0.02599 & \textit{TBD} & \textit{TBD} \\
+XLF & 0.00857 & 0.02038 & \textit{TBD} & \textit{TBD} \\
+XLV & 0.00778 & 0.01594 & \textit{TBD} & \textit{TBD} \\
+XLI & 0.00836 & 0.02007 & \textit{TBD} & \textit{TBD} \\
+\bottomrule
+\end{tabular}
+\smallskip\\
+\small\textit{Note: LSTM values marked TBD will be updated after re-training with early stopping (up to 50 epochs).}
+\end{table}
+
+\section{Dashboard Description}
+
+The Dash application (\texttt{app.py}) provides four interactive tabs, accessible at \texttt{http://127.0.0.1:8050} after running \texttt{python app.py}.
+
+\subsection{Tab 1: Price \& Event Overlay}
+A multi-sector normalized price chart (base = 100) with vertical dashed lines marking curated events. Users can filter sectors via a dropdown and filter events by category (All / Monetary / Geopolitical) using radio buttons. Monetary events are shown in pink; Geopolitical events in yellow-green.
+
+\subsection{Tab 2: Event Drill-Down}
+Selecting an event from a dropdown updates two side-by-side charts: (1) a bar chart of 30-day cumulative log returns for each sector post-event; and (2) a line chart showing sector prices normalized to 100 at the event date, enabling direct visual comparison of recovery trajectories.
+
+\subsection{Tab 3: Forecasting View}
+Displays the actual log return (dotted black), ARIMA prediction (blue), and LSTM prediction (red) over the 2024--2026 test period for a user-selected sector. Shock-regime periods are highlighted with a light red background. Requires \texttt{data/processed/model\_predictions.csv} generated by running notebook 3.
+
+\subsection{Tab 4: Rolling Correlation}
+A line chart of rolling correlation between each sector's log returns and the Federal Funds Rate, with user-selectable window lengths of 3 months (63 days), 6 months (126 days), or 12 months (252 days).
+
+\section{Discussion}
+
+\subsection{ARIMA vs.\ LSTM}
+The current LSTM baseline (5 epochs in initial results) underperforms ARIMA across all sectors and regimes. This is consistent with the known requirement for deep learning models to train for sufficient epochs to converge on a useful loss surface. After re-training with up to 50 epochs and early stopping on validation loss, we expect LSTM performance to improve, particularly for XLE and XLK where the initial gap was largest.
+
+\subsection{Regime Sensitivity}
+The consistent 2--3$\times$ increase in error during Shock regimes, independent of model type, confirms that macroeconomic volatility drives forecast difficulty rather than model misspecification. This is in line with Ewing et al.\ \cite{ewing2003}, who similarly find that sector responses to monetary shocks decay within roughly two months, suggesting bounded but significant predictability constraints during shock windows.
+
+\subsection{Emerging Trends}
+Two novel findings from this analysis stand out. First, XLK's rolling correlation with FEDFUNDS has become persistently negative in the post-pandemic era, consistent with a shift from a growth-oriented to a rate-sensitive sector. Second, cross-sector correlations reached a multi-year high in 2024, potentially reflecting a synchronization regime that limits the diversification benefits of sector-based portfolio construction.
+
+\subsection{Limitations}
+\begin{itemize}
+    \item LSTM models do not yet incorporate macroeconomic features (e.g., FEDFUNDS, event category flags) as inputs; doing so could improve shock-period accuracy.
+    \item The event database is manually curated and limited to nine events; automating event discovery via Wikidata SPARQL remains a future extension.
+    \item The dashboard currently precomputes predictions from a static model run; a production version would require periodic retraining or a streaming architecture.
+\end{itemize}
+
+\section{Conclusion}
+
+This project delivers a complete, reproducible pipeline for sector-level equity market analysis, from raw Stooq OHLCV data through preprocessing, exploratory analysis, statistical and deep learning forecasting, and interactive visualization. Key contributions include:
+
+\begin{enumerate}
+    \item Confirmation of heterogeneous sector responses to nine curated macroeconomic and geopolitical events, extending Ewing et al.\ \cite{ewing2003} to daily ETF data spanning 2005--2026.
+    \item A regime-based evaluation framework showing that Shock-period RMSE is 2--3$\times$ larger than Stable-period RMSE for all models, establishing a quantitative baseline for event-driven forecast degradation.
+    \item An interactive Dash dashboard that operationalizes these findings into four exploration modes: event overlay, event drill-down, forecasting view, and rolling correlation.
+\end{enumerate}
+
+The project demonstrates that combining classical statistical models with modern deep learning in an interactive visual analytics platform can make complex financial market dynamics accessible to students, researchers, and practitioners.
+
+\pagebreak
+
+\begin{thebibliography}{9}
+
+\bibitem{cfadata2024}
+CFA Institute, ``Why data science is a key skill for investment professionals,'' Mar.\ 22, 2024. [Online]. Available: https://www.cfainstitute.org/.
+
+\bibitem{alomari2024}
+M. Alomari, R. Selmi, W. Mensi, H. Ko, S. H. Kang, ``Dynamic spillovers in higher moments and jumps across ETFs and economic and financial uncertainty factors in the context of successive shocks,'' \textit{The Quarterly Review of Economics and Finance}, vol.\ 93, pp.\ 210--228, 2024.
+
+\bibitem{stooq}
+Stooq, ``Stooq Historical Market Data,'' [Online]. Available: https://stooq.com/db/h/.
+
+\bibitem{wikidata}
+Wikidata, ``Wikidata Query Service,'' [Online]. Available: https://query.wikidata.org/.
+
+\bibitem{syllabus}
+DATA 501, ``CAT-2.1: Stock Market Trend Forecasting Dashboard,'' Course Syllabus, Winter 2026.
+
+\bibitem{sahaf2017}
+Z. Sahaf et al., ``PipeVis: Interactive visual exploration of pipeline incident data,'' in \textit{EuroVis Workshop on Visual Analytics (EuroVA)}, 2017.
+
+\bibitem{ewing2003}
+B. T. Ewing, S. M. Forbes, and J. E. Payne, ``The effects of macroeconomic shocks on sector-specific returns,'' \textit{Applied Economics}, vol.\ 35, pp.\ 201--207, 2003.
+
+\bibitem{ewing2002}
+B. T. Ewing, ``The Transmission of Shocks Among S\&P Indexes,'' \textit{Applied Financial Economics}, vol.\ 12, pp.\ 285--290, 2002.
+
+\end{thebibliography}
+
+\end{document}

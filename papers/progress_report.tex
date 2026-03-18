@@ -3,129 +3,176 @@
 \usepackage[letterpaper,top=2cm,bottom=2cm,left=3cm,right=3cm,marginparwidth=1.75cm]{geometry}
 \usepackage{amsmath}
 \usepackage{graphicx}
+\usepackage{float}
 \usepackage[colorlinks=true, allcolors=blue]{hyperref}
 
 \title{\textbf{Progress Report: Interactive Dashboard for Analysis and Forecasting of Sector Performance}}
+
 \author{Ashton Frese, Karen Reyes González, Wilbur Elbouni}
-\date{March 11, 2026}
 
 \begin{document}
 \maketitle
 
-% change abstract --> delete LSTM (stable and GARCH (volatile) and add challenges aand solutions, potentiall y wikidata transition to manual curated events.
 
-\section{Abstract}
-This report details the progress made in developing an interactive dashboard for analyzing and forecasting US equity sector performance (XLK, XLE, XLF, XLV, XLI) from 2005 to 2026. To date, we have successfully completed the data acquisition and preprocessing phases, integrating Stooq market data with Federal Funds rates and curated influential events. Exploratory Data Analysis (EDA) has revealed distinct sectoral responses to macroeconomic shocks, such as the COVID-19 pandemic and inflationary cycles. We have implemented and validated a suite of forecasting models, including ARIMA, GARCH, and LSTM, using a rolling-window approach.Our original planned source for influential effects ended up returning redundant results, leading us to do a manual selection of these events. The project is currently in the dashboard development phase, focusing on interactive event-overlay and drill-down features.
+\begin{abstract}
+\noindent This report aims to provide a summary of the progress made so far in our Capstone project, an interactive dashboard designed to forecast US equity sector performance (XLK, XLE, XLF, XLV, XLI) using data between 2005 and 2026. Data acquisition and preprocessing have been completed, including the integration of Stooq financial data, Federal Funds rates, and manually curated macroeconomic/geopolitical events. Through Exploratory Data Analysis (EDA), we have identified heterogeneous sector responses to monetary policy cycles as well as to global events such as the COVID-19 pandemic. ARIMA, GARCH, and LSTM models have been developed to forecast sector performance, showing promising results, including ARIMA currently outperforming LSTM models for all sectors at present. We have encountered noisy financial time series data and unreliable event data through Wikidata APIs which have been challenging to overcome. To mitigate these problems, we have used longer volatility windows, applied dropout regularization, and a curated event cache. Currently, we are in the development phase of building an interactive dashboard to display model outputs, including future developments such as event overlays and real-time responsiveness.
+\end{abstract}
 
 \section{Background}
 
-% make it truly consistent with what we have done so far
 
-\subsection{Changes or Refined Focus}
-Since the initial proposal, our research focus has shifted from a broad analysis of market trends to a more granular investigation of \textit{heterogeneous sector sensitivity}. Initially, we treated all sectors as potentially equal in their response to macro-shocks. However, preliminary findings and literature deep-dives led us to categorize sectors as "shock transmitters" (e.g., Industrials and Technology) or "downstream receptors" (e.g., Utilities and Healthcare). We have also refined our event database to prioritize "Monetary" and "Geopolitical" categories, as these showed the most significant impact on rolling sector correlations.
-
-\subsection{New Insights Gained from Literature Reviews}
-Our review of Ewing et al. (2003) and Ewing (2002) provided critical theoretical grounding. Ewing et al. (2003) demonstrated that unanticipated tightening of monetary policy (Fed Funds shocks) has a statistically significant negative impact on Financials and Capital Goods, which we have corroborated in our analysis of the 2022--2023 tightening cycle. Furthermore, Ewing (2002) introduced the concept of generalized forecast error variance decomposition, highlighting that Industrials often explain a large portion of the variance in other sectors. This insight prompted us to add a "Cross-Sector Correlation" view to our dashboard to visualize these internal propagation mechanisms.
+\subsection{Changes and Literature Review Insights}
+We have refined our event database to highlight those events related to 'Monetary' and 'Geopolitical' events, as there was no inherent measure of event significance. This allowed us to manually select a limited amount of significant macro events of interest given their small numbers.
+Our reading of Ewing et al. (2003) and Ewing (2002) served as a source of motivation for our chosen variables and methodological extensions. For instance, Ewing et al. (2003) demonstrate that unanticipated monetary policy tightening, as identified through their measure of shocks to the Federal Funds Rate, has statistically significant negative impulse response effects on Financials and Capital Goods sectors. Although their study does not examine correlations, it nonetheless informed our choice to use a proxy measure of Fed Funds as a key driver of monetary policy. Furthermore, generalized forecast error variance decompositions presented in Ewing (2002) demonstrate that Industrials often explain a large fraction of the variation in other sectors' returns. This measure of shock transmission, as opposed to co-movement, nonetheless informed our choice to include a cross-sector correlation component to visualize potential channels of propagation within the broader equity markets.
 
 \subsection{Alignment with Course Objectives}
-The project continues to serve as a comprehensive application of the DATA 501 curriculum. By implementing a hybrid modeling approach (ARIMA vs. LSTM), we are directly addressing the course's emphasis on comparing classical statistical methods with modern machine learning. The integration of structured data from Wikidata and unstructured-style CSVs from Stooq exercises high-level data engineering skills. Broadly, this work mimics real-world financial analytics pipelines where data communication through interactive tools is as vital as the underlying predictive accuracy.
-
-\hfill
+The project continues to serve as a comprehensive application of the DATA 501 curriculum. By implementing a hybrid modeling approach (ARIMA vs. LSTM), we are directly addressing the course's emphasis on comparing classical statistical methods with modern machine learning. The integration of market data from Stooq, macroeconomic indicators from FRED, and a manually curated event metadata CSV exercises high-level data engineering skills. Broadly, this work mimics real-world financial analytics pipelines where data communication through interactive tools is as vital as the underlying predictive accuracy.
 
 \section{Research Questions}
 
 \subsection{Updates on Research Questions}
-Our core research questions have evolved from qualitative comparisons to rigorous quantitative analysis. For instance, Question 4 (Predictive accuracy of LSTM vs. ARIMA) is now being answered by calculating RMSE/MAE over distinct time windows—specifically, the high-volatility years (2020 and 2022) versus more stable periods (2018–2019). We are utilizing statistical significance tests to determine if the predictive gains of LSTM models justify their computational overhead in different market regimes.
+Our research questions are changing from qualitative comparisons to quantitative analysis. For example, research question 4, “Predictive accuracy of LSTM compared with ARIMA,” is now being addressed by calculating the RMSE/MAE for different time windows. Statistical significance tests are being conducted to ascertain whether the improvement in prediction by the LSTM justifies the increased computation required by the models. The visualizations are helping the variance analysis significantly and are bringing us closer to answering our research questions by helping identify trends and patterns.
 
 \subsection{Modifications to the Original Questions}
-We have refined our original focus on "all events" to a categorical analysis. Specifically, we modified Question 2 to distinguish between \textit{monetary shocks} (FOMC rate hikes) and \textit{geopolitical shocks}. This has allowed us to isolate "Fed-sensitive" sectors (XLK, XLF) from "Energy-sensitive" sectors (XLE). We also added a sub-question regarding \textit{asymmetric volatility}—whether sectors recover from negative shocks at the same rate they respond to them.
+We have moved beyond our original "all events" focus to a categorical approach. We have refined Question 2 by breaking out \textit{monetary shocks} (FOMC rate increases) from \textit{geopolitical shocks}. This allows us to separate "Fed-sensitive" sectors (XLK, XLF) from "Energy-sensitive" sectors (XLE). We also added a sub-question about \textit{asymmetric volatility}, or whether sectors recover as quickly as they fall in response to negative events.
 
 \subsection{New Emerging Trends}
 Preliminary results suggest that the "Technology" (XLK) sector has transitioned from being primarily growth-oriented to a more interest-rate-sensitive "utility-like" behavior during the post-pandemic era. We also observe that cross-sector correlations have hit a multi-year high in 2024, possibly indicating a "regime of synchronization" that limits the benefits of sector-based diversification.
 
-\hfill
-
 \section{Methodology and Implementation}
 
 \subsection{Dataset Selection}
-Our primary dataset consists of daily OHLCV values for five sector ETFs (XLK, XLE, XLF, XLV, XLI) spanning February 2005 to March 2026. This is augmented by the Federal Funds Effective Rate from FRED and a curated \texttt{events.csv} derived from Wikidata.
+Our main source is daily OHLCV time series for five sector ETFs (XLK, XLE, XLF, XLV, XLI) for the period from February 2005 to March 2026. We also include the Federal Funds Effective Rate series from FRED and a custom \texttt{events.csv} with important macroeconomic and geopolitical event dates (Lehman Brothers Bankruptcy, US Credit Rating Downgrade, Start of Oil Price Collapse, Brexit Referendum, COVID-19 Pandemic Declaration).
 
 \subsection{Data Cleaning and Pre-processing}
 To prepare the data for time-series modeling, we implemented:
 \begin{itemize}
     \item \textbf{Frequency Alignment:} All datasets were aligned to a standard business day frequency ('B'), with missing holiday values handled through forward-filling.
     \item \textbf{Normalization:} We computed daily log returns ($r_t = \ln(P_t / P_{t-1})$) to achieve stationarity.
-    \item \textbf{Volatility Metrics:} Annualized rolling standard deviation (21-day window) was calculated for all sectors.
+    \item \textbf{Volatility Metrics:} Annualized rolling standard deviation (30-day window) was calculated for all sectors.
 \end{itemize}
 
+% Help lol 
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.95\linewidth]{normalized_sector_etf_prices.png}
+    \caption{Normalized Sector ETF Prices (base 100, Feb 2005 -- Feb 2026)}
+    \label{fig:norm-prices}
+\end{figure}
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.95\linewidth]{30_day_rolling_volatility.png}
+    \caption{30-Day Annualized Rolling Volatility}
+    \label{fig:rolling-vol}
+\end{figure}
+
 \subsection{Exploratory Data Analysis (EDA)}
-Our EDA focused on visualizing "Shock Windows." We used Plotly to overlay vertical markers for major Wikidata events on sector price charts. A key feature of our analysis is the \textbf{Event Response Drill-Down}, which isolates a $\pm 30$-day window around significant dates.
+For our EDA, we decided to focus on "visualizing 'Shock Windows.'" We utilized "Plotly" to place vertical markers for manually curated macro events on price charts for each sector. An important aspect of our EDA is \textbf{Event Response Drill-Down}, where cumulative log returns are calculated over a 30-day (or approximately 22 trading day) window following each event.
 
 \subsection{Visualization Development}
-The visualization layer is built using \texttt{Dash} and \texttt{Plotly}. Current implementations include synchronized dual-y-axis plots showing price trends and volatility spikes, and rolling correlation heatmaps.
+The visualization layer is built using \texttt{Plotly}. So far, there are various implementations, such as normalized price trend charts, 30-day rolling volatility charts, macro events placed on individual price charts for each sector, 6-month rolling correlation line charts with FEDFUNDS, and a faceted bar chart showing heterogeneous 30-day cumulative returns for each event across all sectors. A \texttt{Dash} interactive dashboard is the intended output.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{xlk_price_with_macroeconomic_event_overlay.png}
+    \caption{XLK Price with Macroeconomic Event Overlay}
+    \label{fig:xlk-events}
+\end{figure}
+
 
 \subsection{Tools and Techniques}
 We use \texttt{statsmodels} for ARIMA, \texttt{arch} for GARCH, and \texttt{TensorFlow/Keras} for LSTM architectures, utilizing a many-to-one sequence-to-vector approach.
 
 \subsection{Evaluation Metrics}
-Model performance is evaluated using RMSE and MAE. We have specifically implemented a "Regime-Weighted RMSE" to penalize errors more heavily during high-volatility periods.
-
-\hfill
-
+For model performance evaluation, we use both RMSE and MAE. We divide the test period into two sub-periods: "Stable" and "Shock," where "Shock" days are those where the sector's rolling 30-day annualized volatility is above the 90th percentile of its test period distribution. We report the RMSE in two regimes.
 \section{Results and Discussion}
 
 \subsection{Initial Insights, Patterns, or Trends Discovered}
-Our initial analysis confirms that sector sensitivity to monetary policy is highly non-uniform. The Financials (XLF) and Technology (XLK) sectors show a correlation of $-0.68$ with the Federal Funds Rate during the 2022--2023 tightening cycle, while Healthcare (XLV) remained relatively insulated with a correlation of $-0.15$. We also discovered that the Energy (XLE) sector frequently serves as a "natural hedge" during geopolitical shocks, often decoupling from the broad market indices.
+Our initial analysis confirms that sector sensitivity to monetary policy is indeed non-uniform. The rolling correlation of sector log returns with the Federal Funds Rate for the last 6 months indicates that sectors respond in different ways at different times. The rolling correlations also indicate that the response of the Energy sector represented by XLE is notably different compared to the response of the other sectors during the recent period of monetary policy tightening in 2022-2023. The modeling results for the period covering 546 test observations from 2024-01-01 to 2026-02-02 indicate that XLE and XLK have the highest prediction errors in the Shock regime compared to the other sectors. XLV is the most predictable sector in our analysis, with the lowest prediction errors in the Stable regime ($0.008$) and in the Shock regime ($0.016$). The Shock regime errors are $2 \text{--}3$ times larger compared to the Stable regime errors for all sectors. This confirms that macroeconomic shocks indeed increase the difficulty of sectoral return predictions.
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=\linewidth]{sector_heterogenous_response.png}
+    \caption{Sector Heterogeneous Response: 30-Day Cumulative Returns Post-Event}
+    \label{fig:het-response}
+\end{figure}
 
 \subsection{Examples of Visualizations Created}
-We have developed a "Sector Volatility Profile" dashboard that allows users to compare the 30-day post-shock recovery curve of different sectors. For example, our COVID-19 drill-down visualization shows that while all sectors experienced a $20\%+$ volatility spike, the Technology sector's volatility decayed back to baseline levels 45\% faster than the Industrials sector.
+We have developed five primary visualizations: (1) normalized trends of ETF price movements (base 100) since 2005 till date; (2) volatility for all sectors based on 30-day annualized rolling volatility; (3) the XLK price chart with vertical markers and text for each curated event; (4) the 6-month rolling correlation of each sector's log return with FEDFUNDS; and (5) a faceted bar chart showing the 30-day cumulative return for each sector after each macro event. The sixth visualization displays the actual log return and the predicted log return based on the ARIMA and LSTM models for XLK for the test period of 2024-2026.
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=\linewidth]{6_month_rolling_correlation_with_FEDFUNDS.png}
+    \caption{6-Month Rolling Correlation of Sector Returns with FEDFUNDS}
+    \label{fig:rolling-corr}
+\end{figure}
+
+\begin{table}[h!]
+\centering
+\caption{Regime-Based RMSE: ARIMA(1,0,1) vs.\ LSTM (2024--2026 test set, 546 observations)}
+\begin{tabular}{lcccc}
+\hline
+\textbf{Sector} & \textbf{ARIMA (Stable)} & \textbf{ARIMA (Shock)} & \textbf{LSTM (Stable)} & \textbf{LSTM (Shock)} \\
+\hline
+XLK & 0.01303 & 0.02860 & 0.01346 & 0.02927 \\
+XLE & 0.01125 & 0.02599 & 0.01543 & 0.02877 \\
+XLF & 0.00857 & 0.02038 & 0.00882 & 0.02073 \\
+XLV & 0.00778 & 0.01594 & 0.00789 & 0.01610 \\
+XLI & 0.00836 & 0.02007 & 0.00844 & 0.02025 \\
+\hline
+\end{tabular}
+\label{tab:regime_rmse}
+\end{table}
 
 \subsection{Unexpected Findings or Deviations from Hypotheses}
-We initially hypothesized that LSTM models would outperform ARIMA/GARCH across all periods. However, during the "Shock" regimes (e.g., March 2020), our findings show that LSTM error rates spiked by $150\%$, while GARCH models maintained a more stable (though still high) error profile. This suggests that deep learning models may struggle with "Black Swan" events that lack representation in the training data, leading us to adopt a hybrid ensemble approach for the final dashboard.
-
-\hfill
+We initially hypothesized that LSTM models would outperform ARIMA(1,0,1) across all periods. Instead, ARIMA outperforms the LSTM in every sector and both regimes (see Table~\ref{tab:regime_rmse}). The gap is most pronounced for XLE, where the LSTM Stable RMSE (0.01543) is 37\% higher than ARIMA's (0.01125). We attribute this to the LSTM being trained for only 5 epochs, meaning the network likely has not converged. Increasing training epochs or adding early stopping based on validation loss are the most immediate levers for improvement.
 
 \section{Challenges and Resolutions}
 
 \subsection{Key Obstacles Encountered}
-The most significant challenge was the \textit{noise-to-signal ratio} in daily financial data. Initial models were capturing seasonal noise rather than macroeconomic signals. Furthermore, the Wikidata SPARQL endpoint often returned redundant or irrelevant events, making manual curation necessary to maintain dashboard quality.
+The biggest challenge faced in this case was the \textit{noise-to-signal ratio} in financial data. The initial models were picking up seasonal noise instead of financial signals. In addition, there were issues with redundant and/or irrelevant data from the Wikidata SPARQL endpoint that required curation.
 
 % Double check hallucinations 
 \subsection{How Challenges were Addressed}
-To address high-frequency noise, we prioritized longer rolling windows for volatility calculations. To solve the LSTM overfitting issue, we introduced dropout layers (0.2) and implemented an early-stopping callback based on validation loss. We also moved from a dynamic Wikidata query to a "curated-cache" model, where events are filtered once and stored locally in \texttt{events.csv}.
+To handle the high-frequency noise, the focus was on using a longer window size for the volatility calculations, i.e., a 30-day window size. In order to handle the overfitting of the LSTM, Dropout layers with a dropout rate of 0.2 were used after each LSTM layer. The approach was changed from using a dynamic query on Wikidata to using a 'curated cache' approach, where the events are filtered once and stored in \text
 
 \subsection{Remaining Concerns that Require Resolution}
-A remaining concern is the integration of high-latency models (LSTM) into the real-time Dash application. We are currently exploring model quantization or pre-computing forecasts to ensure the dashboard remains responsive for the user.
-
-\hfill
+There are two issues that need to be addressed. First, the performance of LSTM is currently worse than ARIMA, which is due to inadequate training data, specifically only 5 epochs. This is a priority issue that needs to be addressed in the near future. Second, there is a need to incorporate any trained model into the real-time application using Dash by pre-computing predictions or using cache.
 
 \section{Next Steps}
 
 \subsection{Roadmap for the Remaining Phases of the Project}
-The immediate focus for the final three weeks of the project is the consolidation of the modeling backend with the Dash frontend. We have completed the standalone prototypes and now need to ensure the "Event Trigger" logic correctly updates both the historical analysis and the forecasting windows.
+The major area of concentration for the final phase will be the integration of the modeling backend with the Dash frontend. This will include the integration of the event trigger mechanism with the ability to update the historical analysis, forecast windows, and sector drill-down views. The LSTM will be improved by increasing the training epochs and the addition of the validation-based early stopping mechanism.
 
 \subsection{Short-term and Long-term Milestones}
 \begin{itemize}
-    \item \textbf{Milestone 1 (Week 7):} Complete the "Drill-Down" interaction logic, allowing users to toggle between categorical event views (e.g., viewing only FOMC meetings).
-    \item \textbf{Milestone 2 (Week 8):} Finalize the rolling-window evaluation report, including a detailed comparison of RMSE across all five sectors for the 2024--2025 test period.
-    \item \textbf{Milestone 3 (Final Delivery):} Deployment of the dashboard and final documentation of the preprocessing pipeline.
+    \item \textbf{Milestone 1 (Week 7):} Implement and test the event‑category drill‑down interface, enabling users to filter visualizations by monetary vs.\ geopolitical shocks.
+    \item \textbf{Milestone 2 (Week 8):} Finalize the rolling‑window evaluation report and integrate model performance summaries directly into the dashboard.
+    \item \textbf{Milestone 3 (Final Delivery):} Deploy the interactive dashboard and deliver complete documentation of the data pipeline, modeling framework, and user interaction design.
 \end{itemize}
+
 %CHANGE THIS SECTION, this are not our planned next steps lol
 \subsection{Anticipated Deliverables for the Next Progress Report}
-The final report will include comprehensive "Model Performance Matrix" and a user-guide for the interactive dashboard. We also plan to include a section on "Portfolio Diversification Insights," providing actionable conclusions based on our cross-sector correlation findings.
-
-\hfill
+The next progress report will include the following elements: (1) a consolidated Model Performance Matrix for ARIMA, GARCH, and LSTM models across all sectors and regimes of volatility; (2) a functional prototype for the Dash-based visualization dashboard with interactive event filtering and drill-down windows, as well as dynamic chart updates; and (3) a user-centered guide to the features and data sources used in the visualization, as well as an explanation of key visualizations. Additionally, the next progress report will include a preliminary version of the “Portfolio Diversification Insights” section with an overview of correlation patterns across sectors.
 
 \section{Conclusion}
-% Did we find heterogeneous recovery rates?
+
+% Did we find heterogeneous recovery rates? 
+% Answer: Yeah the 30 day cumulative returns post-event
 \subsection{Key Progress Achievements}
-Over the past four weeks, we have moved from a conceptual framework to a functional data pipeline. Key achievements include the successful integration of three different variables (Market Data, Macroeconomic Indicators and Event Metadata) and the validation of baseline vs. deep learning models. Our discovery of the heterogeneous recovery rates across sectors during shocks represents a significant step toward answering our diagnostic research questions.
+In the past four weeks, we have transitioned from a conceptual framework to a functional data pipeline. Some of the milestones include the integration of the different variables (Market Data, Macroeconomic Indicators, and Event Metadata), as well as the validation of the baseline and deep learning approaches. The discovery of the different rates of sectoral recoveries in the midst of the shocks is a major milestone in answering the diagnostic research questions.
+
 %Double check this bit
+% Answer: Doubled checked it, you can refer to the data from the table above, everything checks out so far!
 \subsection{The Significance of Findings So Far}
-Our findings highlight the limitations of "black-box" deep learning in volatile financial markets. The relative stability of GARCH models during shock regimes suggests that for practical risk management, traditional statistical methods still provide a vital baseline. Furthermore, the identified rate-sensitivity of the Technology sector (XLK) provides a modern update to traditional sectoral classifications.
-%
+Our findings show that a simple ARIMA(1,0,1) baseline currently outperforms the LSTM in all sectors and both market regimes. This underscores that deep learning models require adequate training to be competitive. Furthermore, the consistently higher Shock-regime RMSE across all models and sectors (roughly $2\text{--}3\times$ Stable-regime error) confirms that macroeconomic volatility is the primary driver of forecast error, independent of model type.
+
+
 \subsection{Areas Requiring Further Work}
-The primary area for further work is optimizing the user experience of the dashboard. Ensuring that the high-dimensional data is presented in an intuitive, "drill-down" fashion remains a design challenge. Additionally, we aim to refine the LSTM architecture to better incorporate the "Event Category" as a categorical feature, potentially improving its performance during macroeconomic shifts.
+The area that requires further work is optimizing the user experience for the dashboard. The challenge is to present the high-dimensional data in an "intuitive drill down" manner. Another area for further work is to refine the design of the LSTM architecture in order to incorporate the "Event Category" as a categorical feature in an optimal manner.
+
+\pagebreak
 
 \begin{thebibliography}{9}
 
