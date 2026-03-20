@@ -388,23 +388,76 @@ app.layout = dmc.MantineProvider(
                             children=[
                                 dmc.Stack(
                                     children=[
-                                        dmc.Text("Correlation Period (Recent History)", size="sm", fw=500, mb=5),
-                                        dmc.SegmentedControl(
-                                            id="heatmap-window",
-                                            data=[
-                                                {"label": "Last 3 Months",  "value": "63"},
-                                                {"label": "Last 6 Months",  "value": "126"},
-                                                {"label": "Last 12 Months", "value": "252"},
-                                            ],
-                                            value="126",
-                                            fullWidth=True,
-                                            color="indigo",
+                                        dmc.Grid(
+                                            children=[
+                                                dmc.GridCol(
+                                                    span=3,
+                                                    children=[
+                                                        dmc.Select(
+                                                            id="heatmap-start-year",
+                                                            label="Start Year",
+                                                            data=[{"label": str(y), "value": str(y)} for y in range(df.index.min().year, df.index.max().year + 1)],
+                                                            value=str(df.index.max().year - 1),
+                                                        )
+                                                    ]
+                                                ),
+                                                dmc.GridCol(
+                                                    span=3,
+                                                    children=[
+                                                        dmc.Select(
+                                                            id="heatmap-start-month",
+                                                            label="Start Month",
+                                                            data=[{"label": pd.Timestamp(2000, m, 1).strftime("%b"), "value": str(m)} for m in range(1, 13)],
+                                                            value="1",
+                                                        )
+                                                    ]
+                                                ),
+                                                dmc.GridCol(
+                                                    span=3,
+                                                    children=[
+                                                        dmc.Select(
+                                                            id="heatmap-end-year",
+                                                            label="End Year",
+                                                            data=[{"label": str(y), "value": str(y)} for y in range(df.index.min().year, df.index.max().year + 1)],
+                                                            value=str(df.index.max().year),
+                                                        )
+                                                    ]
+                                                ),
+                                                dmc.GridCol(
+                                                    span=3,
+                                                    children=[
+                                                        dmc.Select(
+                                                            id="heatmap-end-month",
+                                                            label="End Month",
+                                                            data=[{"label": pd.Timestamp(2000, m, 1).strftime("%b"), "value": str(m)} for m in range(1, 13)],
+                                                            value=str(df.index.max().month),
+                                                        )
+                                                    ]
+                                                ),
+                                                dmc.GridCol(
+                                                    span=4,
+                                                    children=[
+                                                        dmc.Text("Market Regime Filter", size="sm", fw=500, mb=5),
+                                                        dmc.SegmentedControl(
+                                                            id="heatmap-regime",
+                                                            data=[
+                                                                {"label": "All", "value": "all"},
+                                                                {"label": "Stable", "value": "stable"},
+                                                                {"label": "Shocks", "value": "shock"},
+                                                            ],
+                                                            value="all",
+                                                            fullWidth=True,
+                                                            color="indigo",
+                                                        )
+                                                    ]
+                                                ),
+                                            ]
                                         ),
                                         dmc.Paper(withBorder=True, shadow="md", p="md", radius="lg", children=[
                                             dcc.Graph(id="sector-heatmap", style={"height": "550px"})
                                         ]),
                                         dmc.Text(
-                                            "This heatmap shows the Pearson correlation coefficient between sector log returns. Darker red indicates stronger positive correlation.",
+                                            "This heatmap shows the Pearson correlation coefficient between sector log returns. *Note: Average values exclude each sector's correlation with itself. Use the Regime Filter to see how diversification benefits vanish during high-volatility periods.",
                                             size="sm", c="dimmed", ta="center"
                                         )
                                     ]
@@ -651,6 +704,8 @@ def update_corr(window):
     fig = go.Figure()
     for s in SECTORS:
         corr = df[f"{s}_log_ret"].rolling(window).corr(df["FEDFUNDS"])
+        # Fill NaNs with 0 (NaNs occur when FEDFUNDS is constant, i.e., zero variance)
+        corr = corr.fillna(0)
         fig.add_trace(go.Scatter(
             x=corr.index, y=corr,
             name=s, line=dict(color=SECTOR_COLORS[s], width=1.5),
@@ -668,18 +723,57 @@ def update_corr(window):
 
 @app.callback(
     Output("sector-heatmap", "figure"),
-    Input("heatmap-window", "value"),
+    Input("heatmap-start-year",  "value"),
+    Input("heatmap-start-month", "value"),
+    Input("heatmap-end-year",    "value"),
+    Input("heatmap-end-month",   "value"),
+    Input("heatmap-regime", "value"),
 )
-def update_heatmap(window):
-    window = int(window)
-    recent_df = df[[f"{s}_log_ret" for s in SECTORS]].tail(window)
+def update_heatmap(start_year, start_month, end_year, end_month, regime):
+    if start_year and start_month and end_year and end_month:
+        start_date = f"{start_year}-{int(start_month):02d}-01"
+        end_date   = (pd.Timestamp(int(end_year), int(end_month), 1) + pd.offsets.MonthEnd(0)).strftime("%Y-%m-%d")
+        mask_dates = (df.index >= start_date) & (df.index <= end_date)
+        period_df  = df.loc[mask_dates]
+    else:
+        period_df = df
+    
+    if len(period_df) < 5:
+        return go.Figure().update_layout(title="Not enough data for this period")
+
+    # 2. Define Shock vs Stable across THIS period
+    vols = period_df[[f"{s}_log_ret" for s in SECTORS]].rolling(30).std() * np.sqrt(252)
+    avg_vol = vols.mean(axis=1)
+    threshold = avg_vol.quantile(0.90)
+    is_shock = avg_vol > threshold
+    
+    # 3. Filter data by regime
+    if regime == "stable":
+        target_df = period_df[~is_shock.fillna(False)]
+    elif regime == "shock":
+        target_df = period_df[is_shock.fillna(False)]
+    else:
+        target_df = period_df
+        
+    if len(target_df) < 5:
+        return go.Figure().update_layout(title="No data found for this regime in this period")
+
+    # 4. Calculate Correlation
+    recent_df = target_df[[f"{s}_log_ret" for s in SECTORS]]
     recent_df.columns = SECTORS
     corr_matrix = recent_df.corr()
     
+    # Calculate average pairwise correlation (exclude diagonal 1.0s)
+    avg_corr = (corr_matrix.values.sum() - len(SECTORS)) / (len(SECTORS)**2 - len(SECTORS))
+    
+    # Calculate average correlation PER SECTOR (exclude self-correlation)
+    sector_avgs = (corr_matrix.sum(axis=1) - 1) / (len(SECTORS) - 1)
+    new_labels = [f"{s}<br>(Avg: {sector_avgs[s]:.2f})" for s in SECTORS]
+    
     fig = go.Figure(data=go.Heatmap(
         z=corr_matrix.values,
-        x=corr_matrix.columns,
-        y=corr_matrix.index,
+        x=new_labels,
+        y=new_labels,
         colorscale="RdBu_r",
         zmin=-1, zmax=1,
         text=np.round(corr_matrix.values, 2),
@@ -687,12 +781,15 @@ def update_heatmap(window):
         hoverinfo="z",
     ))
     
-    window_label = {63: "3-Month", 126: "6-Month", 252: "12-Month"}[window]
+    regime_label = {"all": "Full Period", "stable": "Stable Regimes", "shock": "Shock Regimes"}[regime]
+    s_str = str(start_date)[:10]
+    e_str = str(end_date)[:10]
+    
     fig.update_layout(
-        title=f"Sector-to-Sector Correlation Heatmap ({window_label} Window)",
+        title=f"Sector Correlation: {regime_label}<br><sub>Avg Correlation: {avg_corr:.3f} | Period: {s_str} to {e_str}</sub>",
         xaxis_title="Sector",
         yaxis_title="Sector",
-        margin=dict(t=80, b=80, l=80, r=80),
+        margin=dict(t=100, b=80, l=110, r=80),
         xaxis=dict(automargin=True),
         yaxis=dict(automargin=True)
     )
