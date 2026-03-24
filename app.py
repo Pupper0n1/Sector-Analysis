@@ -22,8 +22,10 @@ warnings.filterwarnings("ignore")
 
 # ── Data paths ────────────────────────────────────────────────────────────────
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MASTER_PATH = os.path.join(BASE_DIR, "data", "processed", "master_sector_data.csv")
-PREDS_PATH  = os.path.join(BASE_DIR, "data", "processed", "model_predictions.csv")
+MASTER_PATH = os.path.join(
+    BASE_DIR, "data", "processed", "master_sector_data.csv")
+PREDS_PATH = os.path.join(
+    BASE_DIR, "data", "processed", "model_predictions.csv")
 
 # ── Load master data ──────────────────────────────────────────────────────────
 df = pd.read_csv(MASTER_PATH, index_col=0, parse_dates=True)
@@ -36,7 +38,8 @@ preds_loaded = False
 if os.path.exists(PREDS_PATH):
     preds_df = pd.read_csv(PREDS_PATH, parse_dates=["date"])
     if "garch_vol" in preds_df.columns:
-        LSTM_AVAILABLE = "lstm_pred" in preds_df.columns and not preds_df["lstm_pred"].isna().all()
+        LSTM_AVAILABLE = "lstm_pred" in preds_df.columns and not preds_df["lstm_pred"].isna(
+        ).all()
         preds_loaded = True
         print("Loaded model_predictions.csv")
     else:
@@ -47,7 +50,7 @@ if not preds_loaded:
 
     SECTORS_LOCAL = ["XLK", "XLE", "XLF", "XLV", "XLI"]
     train_df = df[:"2023-12-31"]
-    test_df  = df["2024-01-01":]
+    test_df = df["2024-01-01":]
 
     rows = []
     for sector in SECTORS_LOCAL:
@@ -62,12 +65,14 @@ if not preds_loaded:
         ).values
 
         # GARCH: refit on full dataset, extract conditional volatility for test period
-        garch_res = arch_model(full_series, vol="Garch", p=1, q=1, dist="Normal").fit(disp="off")
+        garch_res = arch_model(full_series, vol="Garch",
+                               p=1, q=1, dist="Normal").fit(disp="off")
         cond_vol_ann = garch_res.conditional_volatility * np.sqrt(252)
         garch_vol_test = cond_vol_ann.loc[test_df.index].values
 
         # Actual 30-day rolling annualized volatility
-        actual_vol_test = (full_series.rolling(30).std() * np.sqrt(252)).loc[test_df.index].values
+        actual_vol_test = (full_series.rolling(30).std() *
+                           np.sqrt(252)).loc[test_df.index].values
 
         actuals = test_df[f"{sector}_log_ret"].fillna(0).values
         for i, date in enumerate(test_df.index):
@@ -86,15 +91,24 @@ if not preds_loaded:
 
 # ── Event definitions with categories ────────────────────────────────────────
 EVENTS = [
-    {"date": "2008-09-15", "label": "Lehman Brothers Bankruptcy",       "category": "Geopolitical"},
-    {"date": "2011-08-05", "label": "US Credit Rating Downgrade",       "category": "Monetary"},
-    {"date": "2014-06-20", "label": "Start of Oil Price Collapse",      "category": "Geopolitical"},
-    {"date": "2015-08-11", "label": "China Yuan Devaluation",           "category": "Geopolitical"},
-    {"date": "2015-11-27", "label": "Start of 2015–2016 Oil Glut",      "category": "Geopolitical"},
-    {"date": "2016-06-23", "label": "Brexit Referendum",                "category": "Geopolitical"},
-    {"date": "2020-03-11", "label": "COVID-19 Pandemic Declaration",    "category": "Geopolitical"},
-    {"date": "2022-02-24", "label": "Invasion of Ukraine",              "category": "Geopolitical"},
-    {"date": "2022-03-16", "label": "First Fed Rate Hike (2022 Cycle)", "category": "Monetary"},
+    {"date": "2008-09-15", "label": "Lehman Brothers Bankruptcy",
+        "category": "Geopolitical"},
+    {"date": "2011-08-05", "label": "US Credit Rating Downgrade",
+        "category": "Monetary"},
+    {"date": "2014-06-20", "label": "Start of Oil Price Collapse",
+        "category": "Geopolitical"},
+    {"date": "2015-08-11", "label": "China Yuan Devaluation",
+        "category": "Geopolitical"},
+    {"date": "2015-11-27", "label": "Start of 2015–2016 Oil Glut",
+        "category": "Geopolitical"},
+    {"date": "2016-06-23", "label": "Brexit Referendum",
+        "category": "Geopolitical"},
+    {"date": "2020-03-11", "label": "COVID-19 Pandemic Declaration",
+        "category": "Geopolitical"},
+    {"date": "2022-02-24", "label": "Invasion of Ukraine",
+        "category": "Geopolitical"},
+    {"date": "2022-03-16",
+        "label": "First Fed Rate Hike (2022 Cycle)", "category": "Monetary"},
 ]
 events_df = pd.DataFrame(EVENTS)
 events_df["date"] = pd.to_datetime(events_df["date"])
@@ -107,6 +121,7 @@ SECTOR_COLORS = {
 CATEGORY_COLORS = {"Monetary": "#e377c2", "Geopolitical": "#bcbd22"}
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def get_event_vlines(fig, filtered_events, yref="paper"):
     """Add vertical dashed lines + annotations for events."""
@@ -136,7 +151,7 @@ app = dash.Dash(__name__)
 app.title = "Sector Analysis Dashboard"
 
 # DMC specific options
-SECTOR_OPTIONS  = [{"label": s, "value": s} for s in SECTORS]
+SECTOR_OPTIONS = [{"label": s, "value": s} for s in SECTORS]
 CATEGORY_OPTIONS = [
     {"label": "All",          "value": "All"},
     {"label": "Monetary",     "value": "Monetary"},
@@ -174,7 +189,8 @@ app.layout = dmc.MantineProvider(
                                             radius="md",
                                             # variant="gradient",
                                             # gradient={"from": "indigo", "to": "cyan", "deg": 45},
-                                            children=DashIconify(icon="mdi:finance", width=28, color="white"),
+                                            children=DashIconify(
+                                                icon="mdi:finance", width=28, color="white"),
                                         ),
                                         dmc.Title(
                                             "Sector Analysis: Interactive Dashboard for Analysis and Forecasting of Sector Performance",
@@ -187,11 +203,16 @@ app.layout = dmc.MantineProvider(
                                 ),
                                 dmc.Group(
                                     children=[
-                                        dmc.Badge("DATA 501 Capstone", color="indigo", variant="light", size="lg"),
-                                        dmc.Badge("2005–2026", color="cyan", variant="light", size="lg"),
-                                        dmc.Badge("ARIMA", color="teal", variant="light", size="lg"),
-                                        dmc.Badge("LSTM", color="green", variant="light", size="lg"),
-                                        dmc.Badge("GARCH", color="violet", variant="light", size="lg"),
+                                        dmc.Badge(
+                                            "DATA 501 Capstone", color="indigo", variant="light", size="lg"),
+                                        dmc.Badge(
+                                            "2005–2026", color="cyan", variant="light", size="lg"),
+                                        dmc.Badge("ARIMA", color="teal",
+                                                  variant="light", size="lg"),
+                                        dmc.Badge("LSTM", color="green",
+                                                  variant="light", size="lg"),
+                                        dmc.Badge("GARCH", color="violet",
+                                                  variant="light", size="lg"),
                                     ]
                                 )
                             ]
@@ -218,73 +239,83 @@ app.layout = dmc.MantineProvider(
                     ]
                 ),
 
-                                        dmc.Tabs(
-                                    value="overlay",
-                                    variant="pills",
-                                    radius="xl",
-                                    color="indigo",
-                                    id="main-tabs",
+                dmc.Tabs(
+                    value="overlay",
+                    variant="pills",
+                    radius="xl",
+                    color="indigo",
+                    id="main-tabs",
+                    children=[
+                        dmc.TabsList(
+                            justify="center",
+                            mb="xl",
+                            style={
+                                "backgroundColor": "#f1f3f5", "padding": "4px", "borderRadius": "50px"},
+                            children=[
+                                dmc.TabsTab("Price Overlay", value="overlay", leftSection=DashIconify(
+                                    icon="mdi:layers")),
+                                dmc.TabsTab(
+                                    "30-day Rolling Volatility", value="volatility", leftSection=DashIconify(icon="mdi:chart-line")),
+                                dmc.TabsTab(
+                                    "Event Drill-Down", value="events", leftSection=DashIconify(icon="mdi:magnify-expand")),
+                                dmc.TabsTab("Model Performance", value="performance", leftSection=DashIconify(
+                                    icon="mdi:chart-bell-curve")),
+                                dmc.TabsTab("Rolling Correlation with FEDFUNDS", value="corr", leftSection=DashIconify(
+                                    icon="mdi:chart-scatter-plot")),
+                                dmc.TabsTab("Sector Relationships", value="relationships", leftSection=DashIconify(
+                                    icon="mdi:grid")),
+                                dmc.TabsTab("Future Outlook", value="future", leftSection=DashIconify(
+                                    icon="mdi:crystal-ball")),
+                            ]
+                        ),
+
+                        # ── Tab 1: Price & Event Overlay ─────────────────────
+                        dmc.TabsPanel(
+                            value="overlay",
+                            children=[
+                                dmc.Grid(
                                     children=[
-                                        dmc.TabsList(
-                                            justify="center",
-                                            mb="xl",
-                                            style={"backgroundColor": "#f1f3f5", "padding": "4px", "borderRadius": "50px"},
+                                        dmc.GridCol(
+                                            span=6,
                                             children=[
-                                                dmc.TabsTab("Price Overlay", value="overlay", leftSection=DashIconify(icon="mdi:layers")),
-                                                dmc.TabsTab("30-day Rolling Volatility", value="volatility", leftSection=DashIconify(icon="mdi:chart-line")),
-                                                dmc.TabsTab("Event Drill-Down", value="events", leftSection=DashIconify(icon="mdi:magnify-expand")),
-                                                dmc.TabsTab("Model Performance", value="performance", leftSection=DashIconify(icon="mdi:chart-bell-curve")),
-                                                dmc.TabsTab("Rolling Correlation with FEDFUNDS", value="corr", leftSection=DashIconify(icon="mdi:chart-scatter-plot")),
-                                                dmc.TabsTab("Sector Relationships", value="relationships", leftSection=DashIconify(icon="mdi:grid")),
-                                                dmc.TabsTab("Future Outlook", value="future", leftSection=DashIconify(icon="mdi:crystal-ball")),
-                                            ]
-                                        ),
-                
-                                        # ── Tab 1: Price & Event Overlay ─────────────────────
-                                        dmc.TabsPanel(
-                                            value="overlay",
-                                            children=[
-                                                dmc.Grid(
-                                                    children=[
-                                                        dmc.GridCol(
-                                                            span=6,
-                                                            children=[
-                                                                dmc.MultiSelect(
-                                                                    id="overlay-sectors",
-                                                                    label="Select Sectors",
-                                                                    placeholder="Choose sectors to compare",
-                                                                    data=SECTOR_OPTIONS,
-                                                                    value=SECTORS,
-                                                                    searchable=True,
-                                                                )
-                                                            ]
-                                                        ),
-                                                        dmc.GridCol(
-                                                            span=6,
-                                                            children=[
-                                                                dmc.Text("Event Category", size="sm", fw=500, mb=5),
-                                                                dmc.SegmentedControl(
-                                                                    id="overlay-category",
-                                                                    data=CATEGORY_OPTIONS,
-                                                                    value="All",
-                                                                    fullWidth=True,
-                                                                    color="indigo",
-                                                                )
-                                                            ]
-                                                        ),
-                                                    ]
-                                                ),
-                                                dmc.Space(h="md"),
-                                                dmc.Paper(withBorder=True, shadow="md", p="md", radius="lg", children=[
-                                                    dcc.Graph(id="overlay-chart", style={"height": "550px"})
-                                                ]),
-                                                dmc.Text(
-                                                    "This chart shows normalized ETF prices where the first date of the dataset (2005) is indexed to 100. Vertical lines indicate major macroeconomic events.",
-                                                    size="sm", c="dimmed", ta="center", mt="md"
+                                                dmc.MultiSelect(
+                                                    id="overlay-sectors",
+                                                    label="Select Sectors",
+                                                    placeholder="Choose sectors to compare",
+                                                    data=SECTOR_OPTIONS,
+                                                    value=SECTORS,
+                                                    searchable=True,
                                                 )
                                             ]
                                         ),
-                                        
+                                        dmc.GridCol(
+                                            span=6,
+                                            children=[
+                                                dmc.Text(
+                                                    "Event Category", size="sm", fw=500, mb=5),
+                                                dmc.SegmentedControl(
+                                                    id="overlay-category",
+                                                    data=CATEGORY_OPTIONS,
+                                                    value="All",
+                                                    fullWidth=True,
+                                                    color="indigo",
+                                                )
+                                            ]
+                                        ),
+                                    ]
+                                ),
+                                dmc.Space(h="md"),
+                                dmc.Paper(withBorder=True, shadow="md", p="md", radius="lg", children=[
+                                    dcc.Graph(
+                                        id="overlay-chart", style={"height": "550px"})
+                                ]),
+                                dmc.Text(
+                                    "This chart shows normalized ETF prices where the first date of the dataset (2005) is indexed to 100. Vertical lines indicate major macroeconomic events.",
+                                    size="sm", c="dimmed", ta="center", mt="md"
+                                )
+                            ]
+                        ),
+
                         # ── Tab 2: 30-day Rolling Volatility ─────────────────────────────
                         dmc.TabsPanel(
                             value="volatility",
@@ -307,7 +338,8 @@ app.layout = dmc.MantineProvider(
                                         dmc.GridCol(
                                             span=6,
                                             children=[
-                                                dmc.Text("Event Category", size="sm", fw=500, mb=5),
+                                                dmc.Text(
+                                                    "Event Category", size="sm", fw=500, mb=5),
                                                 dmc.SegmentedControl(
                                                     id="vol-category",
                                                     data=CATEGORY_OPTIONS,
@@ -321,7 +353,8 @@ app.layout = dmc.MantineProvider(
                                 ),
                                 dmc.Space(h="md"),
                                 dmc.Paper(withBorder=True, shadow="md", p="md", radius="lg", children=[
-                                    dcc.Graph(id="vol-chart", style={"height": "550px"})
+                                    dcc.Graph(id="vol-chart",
+                                              style={"height": "550px"})
                                 ]),
                                 dmc.Text(
                                     "30-day annualized rolling volatility (σ × √252) for each sector. Vertical lines mark major macroeconomic events. Spikes indicate elevated uncertainty around shocks.",
@@ -329,8 +362,8 @@ app.layout = dmc.MantineProvider(
                                 )
                             ]
                         ),
-                        
-                        
+
+
                         # ── Tab 3: Event Drill-Down ──────────────────────────
                         dmc.TabsPanel(
                             value="events",
@@ -355,12 +388,14 @@ app.layout = dmc.MantineProvider(
                                     children=[
                                         dmc.GridCol(span=6, children=[
                                             dmc.Paper(withBorder=True, shadow="md", p="md", radius="lg", children=[
-                                                dcc.Graph(id="drilldown-bar",  style={"height": "420px"})
+                                                dcc.Graph(
+                                                    id="drilldown-bar",  style={"height": "420px"})
                                             ])
                                         ]),
                                         dmc.GridCol(span=6, children=[
                                             dmc.Paper(withBorder=True, shadow="md", p="md", radius="lg", children=[
-                                                dcc.Graph(id="drilldown-line", style={"height": "420px"})
+                                                dcc.Graph(
+                                                    id="drilldown-line", style={"height": "420px"})
                                             ])
                                         ]),
                                     ]
@@ -371,10 +406,6 @@ app.layout = dmc.MantineProvider(
                                 )
                             ]
                         ),
-
-
-
-
 
 
                         # ── Tab 4: Model Performance ──────────────────────────
@@ -389,14 +420,16 @@ app.layout = dmc.MantineProvider(
                                                 label="Select Sector for Backtest",
                                                 data=SECTORS,
                                                 value="XLK",
-                                                style={"maxWidth": "400px"}
+                                                style={
+                                                    "maxWidth": "400px"}
                                             )
                                         ])
                                     ]
                                 ),
                                 dmc.Space(h="md"),
                                 dmc.Paper(withBorder=True, shadow="md", p="md", radius="lg", children=[
-                                    dcc.Graph(id="forecast-chart", style={"height": "700px"})
+                                    dcc.Graph(id="forecast-chart",
+                                              style={"height": "700px"})
                                 ]),
                                 dmc.Text(
                                     "This backtest evaluates model accuracy on the 2024–2026 validation period. Panel 1 compares ARIMA and LSTM return predictions against actual results, while Panel 2 compares GARCH(1,1) volatility with actual 30-day rolling vol.",
@@ -411,20 +444,25 @@ app.layout = dmc.MantineProvider(
                             children=[
                                 dmc.Stack(
                                     children=[
-                                        dmc.Text("Rolling Window vs Fed Funds", size="sm", fw=500, mb=5),
+                                        dmc.Text(
+                                            "Rolling Window vs Fed Funds", size="sm", fw=500, mb=5),
                                         dmc.SegmentedControl(
                                             id="corr-window",
                                             data=[
-                                                {"label": "3 months (63 days)",  "value": "63"},
-                                                {"label": "6 months (126 days)", "value": "126"},
-                                                {"label": "12 months (252 days)","value": "252"},
+                                                {"label": "3 months (63 days)",
+                                                 "value": "63"},
+                                                {"label": "6 months (126 days)",
+                                                 "value": "126"},
+                                                {"label": "12 months (252 days)",
+                                                 "value": "252"},
                                             ],
                                             value="126",
                                             fullWidth=True,
                                             color="indigo",
                                         ),
                                         dmc.Paper(withBorder=True, shadow="md", p="md", radius="lg", children=[
-                                            dcc.Graph(id="corr-chart", style={"height": "500px"})
+                                            dcc.Graph(id="corr-chart",
+                                                      style={"height": "500px"})
                                         ]),
                                         dmc.Text(
                                             "This chart displays the rolling Pearson correlation between sector returns and the Federal Funds rate. Each point on the line represents the relationship over the preceding window (3, 6, or 12 months), illustrating how sector sensitivity to monetary policy shifts over the 2005–2026 period.",
@@ -449,8 +487,10 @@ app.layout = dmc.MantineProvider(
                                                         dmc.Select(
                                                             id="heatmap-start-year",
                                                             label="Start Year",
-                                                            data=[{"label": str(y), "value": str(y)} for y in range(df.index.min().year, df.index.max().year + 1)],
-                                                            value=str(df.index.max().year - 1),
+                                                            data=[{"label": str(y), "value": str(y)} for y in range(
+                                                                df.index.min().year, df.index.max().year + 1)],
+                                                            value=str(
+                                                                df.index.max().year - 1),
                                                         )
                                                     ]
                                                 ),
@@ -460,7 +500,8 @@ app.layout = dmc.MantineProvider(
                                                         dmc.Select(
                                                             id="heatmap-start-month",
                                                             label="Start Month",
-                                                            data=[{"label": pd.Timestamp(2000, m, 1).strftime("%b"), "value": str(m)} for m in range(1, 13)],
+                                                            data=[{"label": pd.Timestamp(2000, m, 1).strftime(
+                                                                "%b"), "value": str(m)} for m in range(1, 13)],
                                                             value="1",
                                                         )
                                                     ]
@@ -471,8 +512,10 @@ app.layout = dmc.MantineProvider(
                                                         dmc.Select(
                                                             id="heatmap-end-year",
                                                             label="End Year",
-                                                            data=[{"label": str(y), "value": str(y)} for y in range(df.index.min().year, df.index.max().year + 1)],
-                                                            value=str(df.index.max().year),
+                                                            data=[{"label": str(y), "value": str(y)} for y in range(
+                                                                df.index.min().year, df.index.max().year + 1)],
+                                                            value=str(
+                                                                df.index.max().year),
                                                         )
                                                     ]
                                                 ),
@@ -482,21 +525,27 @@ app.layout = dmc.MantineProvider(
                                                         dmc.Select(
                                                             id="heatmap-end-month",
                                                             label="End Month",
-                                                            data=[{"label": pd.Timestamp(2000, m, 1).strftime("%b"), "value": str(m)} for m in range(1, 13)],
-                                                            value=str(df.index.max().month),
+                                                            data=[{"label": pd.Timestamp(2000, m, 1).strftime(
+                                                                "%b"), "value": str(m)} for m in range(1, 13)],
+                                                            value=str(
+                                                                df.index.max().month),
                                                         )
                                                     ]
                                                 ),
                                                 dmc.GridCol(
                                                     span=4,
                                                     children=[
-                                                        dmc.Text("Market Regime Filter", size="sm", fw=500, mb=5),
+                                                        dmc.Text(
+                                                            "Market Regime Filter", size="sm", fw=500, mb=5),
                                                         dmc.SegmentedControl(
                                                             id="heatmap-regime",
                                                             data=[
-                                                                {"label": "All", "value": "all"},
-                                                                {"label": "Stable", "value": "stable"},
-                                                                {"label": "Shocks", "value": "shock"},
+                                                                {"label": "All",
+                                                                 "value": "all"},
+                                                                {"label": "Stable",
+                                                                 "value": "stable"},
+                                                                {"label": "Shocks",
+                                                                 "value": "shock"},
                                                             ],
                                                             value="all",
                                                             fullWidth=True,
@@ -507,7 +556,8 @@ app.layout = dmc.MantineProvider(
                                             ]
                                         ),
                                         dmc.Paper(withBorder=True, shadow="md", p="md", radius="lg", children=[
-                                            dcc.Graph(id="sector-heatmap", style={"height": "550px"})
+                                            dcc.Graph(
+                                                id="sector-heatmap", style={"height": "550px"})
                                         ]),
                                         dmc.Text(
                                             "This heatmap shows the Pearson correlation coefficient between sector log returns. *Note: Average values exclude each sector's correlation with itself. Use the Regime Filter to see how diversification benefits vanish during high-volatility periods.",
@@ -533,14 +583,18 @@ app.layout = dmc.MantineProvider(
                                             )
                                         ]),
                                         dmc.GridCol(span=8, children=[
-                                            dmc.Text("Forecast Horizon (Trading Days)", size="sm", fw=500, mb=5),
+                                            dmc.Text(
+                                                "Forecast Horizon (Trading Days)", size="sm", fw=500, mb=5),
                                             dmc.Slider(
                                                 id="future-horizon",
                                                 min=20, max=126, step=1, value=63,
                                                 marks=[
-                                                    {"value": 20, "label": "1 mo"},
-                                                    {"value": 63, "label": "3 mo"},
-                                                    {"value": 126, "label": "6 mo"},
+                                                    {"value": 20,
+                                                     "label": "1 mo"},
+                                                    {"value": 63,
+                                                     "label": "3 mo"},
+                                                    {"value": 126,
+                                                     "label": "6 mo"},
                                                 ],
                                                 mb="xl"
                                             )
@@ -549,7 +603,8 @@ app.layout = dmc.MantineProvider(
                                 ),
                                 dmc.Space(h="md"),
                                 dmc.Paper(withBorder=True, shadow="md", p="md", radius="lg", children=[
-                                    dcc.Graph(id="future-chart", style={"height": "600px"})
+                                    dcc.Graph(id="future-chart",
+                                              style={"height": "600px"})
                                 ]),
                                 dmc.Text(
                                     "Future projections combine ARIMA (for the mean price trend) and GARCH (for the 95% confidence intervals based on forecasted volatility) beyond February 2, 2026.",
@@ -557,9 +612,6 @@ app.layout = dmc.MantineProvider(
                                 )
                             ]
                         ),
-
-                         # ── Tab 7: 30-day Rolling Volatility ─────────────────────────────
-                        
                     ]
                 )
             ]
@@ -744,7 +796,8 @@ def update_forecast(sector):
     fig.update_layout(
         legend_title="", hovermode="x unified",
         margin=dict(t=80, b=40, l=50, r=50), height=700,
-        xaxis=dict(range=[sec_preds["date"].min(), sec_preds["date"].max()], automargin=True),
+        xaxis=dict(range=[sec_preds["date"].min(),
+                   sec_preds["date"].max()], automargin=True),
         yaxis=dict(automargin=True),
         yaxis2=dict(automargin=True)
     )
@@ -788,21 +841,23 @@ def update_corr(window):
 def update_heatmap(start_year, start_month, end_year, end_month, regime):
     if start_year and start_month and end_year and end_month:
         start_date = f"{start_year}-{int(start_month):02d}-01"
-        end_date   = (pd.Timestamp(int(end_year), int(end_month), 1) + pd.offsets.MonthEnd(0)).strftime("%Y-%m-%d")
+        end_date = (pd.Timestamp(int(end_year), int(end_month), 1) +
+                    pd.offsets.MonthEnd(0)).strftime("%Y-%m-%d")
         mask_dates = (df.index >= start_date) & (df.index <= end_date)
-        period_df  = df.loc[mask_dates]
+        period_df = df.loc[mask_dates]
     else:
         period_df = df
-    
+
     if len(period_df) < 5:
         return go.Figure().update_layout(title="Not enough data for this period")
 
     # 2. Define Shock vs Stable across THIS period
-    vols = period_df[[f"{s}_log_ret" for s in SECTORS]].rolling(30).std() * np.sqrt(252)
+    vols = period_df[[f"{s}_log_ret" for s in SECTORS]
+                     ].rolling(30).std() * np.sqrt(252)
     avg_vol = vols.mean(axis=1)
     threshold = avg_vol.quantile(0.90)
     is_shock = avg_vol > threshold
-    
+
     # 3. Filter data by regime
     if regime == "stable":
         target_df = period_df[~is_shock.fillna(False)]
@@ -810,7 +865,7 @@ def update_heatmap(start_year, start_month, end_year, end_month, regime):
         target_df = period_df[is_shock.fillna(False)]
     else:
         target_df = period_df
-        
+
     if len(target_df) < 5:
         return go.Figure().update_layout(title="No data found for this regime in this period")
 
@@ -818,14 +873,15 @@ def update_heatmap(start_year, start_month, end_year, end_month, regime):
     recent_df = target_df[[f"{s}_log_ret" for s in SECTORS]]
     recent_df.columns = SECTORS
     corr_matrix = recent_df.corr()
-    
+
     # Calculate average pairwise correlation (exclude diagonal 1.0s)
-    avg_corr = (corr_matrix.values.sum() - len(SECTORS)) / (len(SECTORS)**2 - len(SECTORS))
-    
+    avg_corr = (corr_matrix.values.sum() - len(SECTORS)) / \
+        (len(SECTORS)**2 - len(SECTORS))
+
     # Calculate average correlation PER SECTOR (exclude self-correlation)
     sector_avgs = (corr_matrix.sum(axis=1) - 1) / (len(SECTORS) - 1)
     new_labels = [f"{s}<br>(Avg: {sector_avgs[s]:.2f})" for s in SECTORS]
-    
+
     fig = go.Figure(data=go.Heatmap(
         z=corr_matrix.values,
         x=new_labels,
@@ -836,11 +892,12 @@ def update_heatmap(start_year, start_month, end_year, end_month, regime):
         texttemplate="%{text}",
         hoverinfo="z",
     ))
-    
-    regime_label = {"all": "Full Period", "stable": "Stable Regimes", "shock": "Shock Regimes"}[regime]
+
+    regime_label = {"all": "Full Period",
+                    "stable": "Stable Regimes", "shock": "Shock Regimes"}[regime]
     s_str = str(start_date)[:10]
     e_str = str(end_date)[:10]
-    
+
     fig.update_layout(
         title=f"Sector Correlation: {regime_label}<br><sub>Avg Correlation: {avg_corr:.3f} | Period: {s_str} to {e_str}</sub>",
         xaxis_title="Sector",
@@ -863,14 +920,16 @@ def update_future(sector, horizon):
     last_date = df.index[-1]
 
     arima_res = ARIMA(full_series, order=(1, 0, 1)).fit()
-    garch_model_obj = arch_model(full_series, vol="Garch", p=1, q=1, dist="Normal")
+    garch_model_obj = arch_model(
+        full_series, vol="Garch", p=1, q=1, dist="Normal")
     garch_res = garch_model_obj.fit(disp="off")
 
     arima_forecast = arima_res.forecast(steps=horizon)
     garch_forecast = garch_res.forecast(horizon=horizon)
     future_var = garch_forecast.variance.values[-1, :]
 
-    future_dates = pd.date_range(start=last_date + pd.Timedelta(days=1), periods=horizon, freq="B")
+    future_dates = pd.date_range(
+        start=last_date + pd.Timedelta(days=1), periods=horizon, freq="B")
     cum_log_ret = np.cumsum(arima_forecast.values)
     price_pred = last_price * np.exp(cum_log_ret)
 
@@ -880,8 +939,10 @@ def update_future(sector, horizon):
     lower_bound = last_price * np.exp(cum_log_ret - 1.96 * cum_std)
 
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=df.index, y=df[f"{sector}_close"], name="Historical Price", line=dict(color="black", width=1.5)))
-    fig.add_trace(go.Scatter(x=future_dates, y=price_pred, name="ARIMA Forecast", line=dict(color="#1f77b4", width=2)))
+    fig.add_trace(go.Scatter(
+        x=df.index, y=df[f"{sector}_close"], name="Historical Price", line=dict(color="black", width=1.5)))
+    fig.add_trace(go.Scatter(x=future_dates, y=price_pred,
+                  name="ARIMA Forecast", line=dict(color="#1f77b4", width=2)))
     fig.add_trace(go.Scatter(
         x=list(future_dates) + list(future_dates)[::-1],
         y=list(upper_bound) + list(lower_bound)[::-1],
@@ -890,7 +951,8 @@ def update_future(sector, horizon):
     ))
 
     fig.add_vline(x=last_date, line_dash="dash", line_color="gray")
-    fig.add_annotation(x=last_date, y=1.05, yref="paper", text="End of Data (Feb 2, 2026)", showarrow=False)
+    fig.add_annotation(x=last_date, y=1.05, yref="paper",
+                       text="End of Data (Feb 2, 2026)", showarrow=False)
 
     start_view = last_date - pd.DateOffset(years=2)
     fig.update_layout(
@@ -898,10 +960,12 @@ def update_future(sector, horizon):
         xaxis_title="Date", yaxis_title="ETF Price ($)",
         hovermode="x unified", template="plotly_white",
         margin=dict(r=30),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        legend=dict(orientation="h", yanchor="bottom",
+                    y=1.02, xanchor="right", x=1),
         xaxis=dict(
-            range=[start_view, future_dates[-1]], 
-            rangeslider=dict(visible=True, range=[df.index[0], future_dates[-1]]),
+            range=[start_view, future_dates[-1]],
+            rangeslider=dict(visible=True, range=[
+                             df.index[0], future_dates[-1]]),
             type="date", autorange=False,
             automargin=True
         ),
