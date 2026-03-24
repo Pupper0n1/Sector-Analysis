@@ -231,9 +231,10 @@ app.layout = dmc.MantineProvider(
                                             style={"backgroundColor": "#f1f3f5", "padding": "4px", "borderRadius": "50px"},
                                             children=[
                                                 dmc.TabsTab("Price Overlay", value="overlay", leftSection=DashIconify(icon="mdi:layers")),
+                                                dmc.TabsTab("30-day Rolling Volatility", value="volatility", leftSection=DashIconify(icon="mdi:chart-line")),
                                                 dmc.TabsTab("Event Drill-Down", value="events", leftSection=DashIconify(icon="mdi:magnify-expand")),
                                                 dmc.TabsTab("Model Performance", value="performance", leftSection=DashIconify(icon="mdi:chart-bell-curve")),
-                                                dmc.TabsTab("Rolling Correlation", value="corr", leftSection=DashIconify(icon="mdi:chart-scatter-plot")),
+                                                dmc.TabsTab("Rolling Correlation with FEDFUNDS", value="corr", leftSection=DashIconify(icon="mdi:chart-scatter-plot")),
                                                 dmc.TabsTab("Sector Relationships", value="relationships", leftSection=DashIconify(icon="mdi:grid")),
                                                 dmc.TabsTab("Future Outlook", value="future", leftSection=DashIconify(icon="mdi:crystal-ball")),
                                             ]
@@ -283,7 +284,54 @@ app.layout = dmc.MantineProvider(
                                                 )
                                             ]
                                         ),
-                                        # ── Tab 2: Event Drill-Down ──────────────────────────
+                                        
+                        # ── Tab 2: 30-day Rolling Volatility ─────────────────────────────
+                        dmc.TabsPanel(
+                            value="volatility",
+                            children=[
+                                dmc.Grid(
+                                    children=[
+                                        dmc.GridCol(
+                                            span=6,
+                                            children=[
+                                                dmc.MultiSelect(
+                                                    id="vol-sectors",
+                                                    label="Select Sectors",
+                                                    placeholder="Choose sectors to compare",
+                                                    data=SECTOR_OPTIONS,
+                                                    value=SECTORS,
+                                                    searchable=True,
+                                                )
+                                            ]
+                                        ),
+                                        dmc.GridCol(
+                                            span=6,
+                                            children=[
+                                                dmc.Text("Event Category", size="sm", fw=500, mb=5),
+                                                dmc.SegmentedControl(
+                                                    id="vol-category",
+                                                    data=CATEGORY_OPTIONS,
+                                                    value="All",
+                                                    fullWidth=True,
+                                                    color="indigo",
+                                                )
+                                            ]
+                                        ),
+                                    ]
+                                ),
+                                dmc.Space(h="md"),
+                                dmc.Paper(withBorder=True, shadow="md", p="md", radius="lg", children=[
+                                    dcc.Graph(id="vol-chart", style={"height": "550px"})
+                                ]),
+                                dmc.Text(
+                                    "30-day annualized rolling volatility (σ × √252) for each sector. Vertical lines mark major macroeconomic events. Spikes indicate elevated uncertainty around shocks.",
+                                    size="sm", c="dimmed", ta="center", mt="md"
+                                )
+                            ]
+                        ),
+                        
+                        
+                        # ── Tab 3: Event Drill-Down ──────────────────────────
                         dmc.TabsPanel(
                             value="events",
                             children=[
@@ -324,7 +372,12 @@ app.layout = dmc.MantineProvider(
                             ]
                         ),
 
-                        # ── Tab 3: Model Performance ──────────────────────────
+
+
+
+
+
+                        # ── Tab 4: Model Performance ──────────────────────────
                         dmc.TabsPanel(
                             value="performance",
                             children=[
@@ -352,7 +405,7 @@ app.layout = dmc.MantineProvider(
                             ]
                         ),
 
-                        # ── Tab 4: Rolling Correlation ────────────────────────
+                        # ── Tab 5: Rolling Correlation ────────────────────────
                         dmc.TabsPanel(
                             value="corr",
                             children=[
@@ -382,7 +435,7 @@ app.layout = dmc.MantineProvider(
                             ]
                         ),
 
-                        # ── Tab 5: Sector Relationships ──────────────────────
+                        # ── Tab 6: Sector Relationships ──────────────────────
                         dmc.TabsPanel(
                             value="relationships",
                             children=[
@@ -465,7 +518,7 @@ app.layout = dmc.MantineProvider(
                             ]
                         ),
 
-                        # ── Tab 6: Future Outlook ─────────────────────────────
+                        # ── Tab 7: Future Outlook ─────────────────────────────
                         dmc.TabsPanel(
                             value="future",
                             children=[
@@ -504,6 +557,9 @@ app.layout = dmc.MantineProvider(
                                 )
                             ]
                         ),
+
+                         # ── Tab 7: 30-day Rolling Volatility ─────────────────────────────
+                        
                     ]
                 )
             ]
@@ -850,6 +906,43 @@ def update_future(sector, horizon):
             automargin=True
         ),
         yaxis=dict(automargin=True)
+    )
+    return fig
+
+
+@app.callback(
+    Output("vol-chart", "figure"),
+    Input("vol-sectors",  "value"),
+    Input("vol-category", "value"),
+)
+def update_vol(sectors, category):
+    if not sectors:
+        return go.Figure()
+
+    fig = go.Figure()
+    for s in sectors:
+        vol = df[f"{s}_log_ret"].rolling(30).std() * np.sqrt(252)
+        fig.add_trace(go.Scatter(
+            x=vol.index, y=vol,
+            name=s, line=dict(color=SECTOR_COLORS[s], width=1.5),
+        ))
+
+    filtered = events_df if category == "All" else events_df[events_df["category"] == category]
+    fig = get_event_vlines(fig, filtered)
+
+    for cat, col in CATEGORY_COLORS.items():
+        fig.add_trace(go.Scatter(
+            x=[None], y=[None], mode="lines",
+            line=dict(color=col, dash="dash", width=1.5),
+            name=f"{cat} Event", showlegend=True,
+        ))
+
+    fig.update_layout(
+        title="30-Day Annualized Rolling Volatility (σ × √252)",
+        xaxis_title="Date", yaxis_title="Annualized Volatility",
+        legend_title="", hovermode="x unified",
+        margin=dict(t=80, r=20),
+        yaxis=dict(tickformat=".0%"),
     )
     return fig
 
