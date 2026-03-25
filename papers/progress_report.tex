@@ -15,7 +15,7 @@
 
 
 \begin{abstract}
-\noindent This report aims to provide a summary of the progress made so far in our Capstone project, an interactive dashboard designed to forecast US equity sector performance (XLK, XLE, XLF, XLV, XLI) using data between 2005 and 2026. Data acquisition and preprocessing have been completed, including the integration of Stooq financial data, Federal Funds rates, and manually curated macroeconomic/geopolitical events. Through Exploratory Data Analysis (EDA), we have identified heterogeneous sector responses to monetary policy cycles as well as to global events such as the COVID-19 pandemic. ARIMA, GARCH, and LSTM models have been developed to forecast sector performance, showing promising results, including ARIMA currently outperforming LSTM models for all sectors at present. We have encountered noisy financial time series data and unreliable event data through Wikidata APIs which have been challenging to overcome. To mitigate these problems, we have used longer volatility windows, applied dropout regularization, and a curated event cache. Currently, we are in the development phase of building an interactive dashboard to display model outputs, including future developments such as event overlays and real-time responsiveness.
+\noindent This report aims to provide a summary of the progress made so far in our Capstone project, an interactive dashboard designed to forecast US equity sector performance (XLK, XLE, XLF, XLV, XLI) using data between 2005 and 2026. Data acquisition and preprocessing have been completed, including the integration of Stooq financial data, Federal Funds rates, and manually curated macroeconomic/geopolitical events. Through Exploratory Data Analysis (EDA), we have identified heterogeneous sector responses to monetary policy cycles as well as to global events such as the COVID-19 pandemic. ARIMA, GARCH, and LSTM models have been developed to forecast sector performance, showing promising results, including ARIMA currently outperforming LSTM models for all sectors at present. We have faced challenges due to noisy financial time series and inconsistent event data obtained from Wikidata APIs. To mitigate these problems, we have used longer volatility windows, applied dropout regularization, and a curated event cache. Currently, we are in the development phase of building an interactive dashboard to display model outputs, including future developments such as event overlays and real-time responsiveness.
 \end{abstract}
 
 \section{Background}
@@ -31,20 +31,20 @@ The project continues to serve as a comprehensive application of the DATA 501 cu
 \section{Research Questions}
 
 \subsection{Updates on Research Questions}
-Our research questions are changing from qualitative comparisons to quantitative analysis. For example, research question 4, “Predictive accuracy of LSTM compared with ARIMA,” is now being addressed by calculating the RMSE/MAE for different time windows. Statistical significance tests are being conducted to ascertain whether the improvement in prediction by the LSTM justifies the increased computation required by the models. The visualizations are helping the variance analysis significantly and are bringing us closer to answering our research questions by helping identify trends and patterns.
+Our research questions are changing from qualitative comparisons to quantitative analysis. For example, research question 4, “Predictive accuracy of LSTM compared with ARIMA,” is now being addressed by calculating the RMSE/MAE for different time windows. Statistical significance tests are being conducted to determine whether the improvement in prediction by the LSTM justifies the increased computation required by the models. The visualizations are helping the variance analysis significantly and are bringing us closer to answering our research questions by helping identify trends and patterns.
 
 \subsection{Modifications to the Original Questions}
-We have moved beyond our original "all events" focus to a categorical approach. We have refined Question 2 by breaking out \textit{monetary shocks} (FOMC rate increases) from \textit{geopolitical shocks}. This allows us to separate "Fed-sensitive" sectors (XLK, XLF) from "Energy-sensitive" sectors (XLE). We also added a sub-question about \textit{asymmetric volatility}, or whether sectors recover as quickly as they fall in response to negative events.
+We have moved beyond our original "all events" focus to a categorical approach. We have refined Question 2 by breaking out \textit{monetary shocks} (FOMC rate increases) from \textit{geopolitical shocks}. This allows us to separate more "Fed-sensitive" sectors (XLK, XLF) from others. We also added a sub-question about \textit{asymmetric volatility}, or whether sectors recover as quickly as they fall in response to negative events or vice-versa.
 
 \subsection{New Emerging Trends}
 Preliminary results suggest that the "Technology" (XLK) sector has transitioned from being primarily growth-oriented to a more interest-rate-sensitive "utility-like" behavior during the post-pandemic era. We also observe that cross-sector correlations have hit a multi-year high in 2024, possibly indicating a "regime of synchronization" that limits the benefits of sector-based diversification.
 
 \section{Methodology and Implementation}
-
+%WHY FEBRUARY? SEEMS KINDA RANDOM LOL
 \subsection{Dataset Selection}
 Our main source is daily OHLCV time series for five sector ETFs (XLK, XLE, XLF, XLV, XLI) for the period from February 2005 to March 2026. We also include the Federal Funds Effective Rate series from FRED and a custom \texttt{events.csv} with important macroeconomic and geopolitical event dates (Lehman Brothers Bankruptcy, US Credit Rating Downgrade, Start of Oil Price Collapse, Brexit Referendum, COVID-19 Pandemic Declaration).
 
-\subsection{Data Cleaning and Pre-processing}
+\subsection{Data Cleaning and Preprocessing}
 To prepare the data for time-series modeling, we implemented:
 \begin{itemize}
     \item \textbf{Frequency Alignment:} All datasets were aligned to a standard business day frequency ('B'), with missing holiday values handled through forward-filling.
@@ -68,8 +68,8 @@ To prepare the data for time-series modeling, we implemented:
 \end{figure}
 
 \subsection{Exploratory Data Analysis (EDA)}
-For our EDA, we decided to focus on "visualizing 'Shock Windows.'" We utilized "Plotly" to place vertical markers for manually curated macro events on price charts for each sector. An important aspect of our EDA is \textbf{Event Response Drill-Down}, where cumulative log returns are calculated over a 30-day (or approximately 22 trading day) window following each event.
-
+For our EDA, we decided to focus on "visualizing 'Shock Windows.'" We utilized "Plotly" to place vertical markers for manually curated macro events on price charts for each sector. An important aspect of our EDA is \textbf{Event Response Drill-Down}, where cumulative log returns are calculated over a 30-day (or approximately 22 trading days) window following each event.
+%I hate the word faceted gng
 \subsection{Visualization Development}
 The visualization layer is built using \texttt{Plotly}. So far, there are various implementations, such as normalized price trend charts, 30-day rolling volatility charts, macro events placed on individual price charts for each sector, 6-month rolling correlation line charts with FEDFUNDS, and a faceted bar chart showing heterogeneous 30-day cumulative returns for each event across all sectors. A \texttt{Dash} interactive dashboard is the intended output.
 
@@ -135,7 +135,7 @@ The biggest challenge faced in this case was the \textit{noise-to-signal ratio} 
 
 % Double check hallucinations 
 \subsection{How Challenges were Addressed}
-To handle the high-frequency noise, the focus was on using a longer window size for the volatility calculations, i.e., a 30-day window size. In order to handle the overfitting of the LSTM, Dropout layers with a dropout rate of 0.2 were used after each LSTM layer. The approach was changed from using a dynamic query on Wikidata to using a 'curated cache' approach, where the events are filtered once and stored in \text
+To handle the high-frequency noise, the focus was on using a longer window size for the volatility calculations, i.e., a 30-day window size. In order to handle the overfitting of the LSTM, dropout layers with a dropout rate of 0.2 were used after each LSTM layer. The approach was changed from using a dynamic query on Wikidata to using a 'curated cache' approach, where the events are filtered once and stored in \textit{events.csv}.
 
 \subsection{Remaining Concerns that Require Resolution}
 There are two issues that need to be addressed. First, the performance of LSTM is currently worse than ARIMA, which is due to inadequate training data, specifically only 5 epochs. This is a priority issue that needs to be addressed in the near future. Second, there is a need to incorporate any trained model into the real-time application using Dash by pre-computing predictions or using cache.
@@ -154,7 +154,7 @@ The major area of concentration for the final phase will be the integration of t
 
 %CHANGE THIS SECTION, this are not our planned next steps lol
 \subsection{Anticipated Deliverables for the Next Progress Report}
-The next progress report will include the following elements: (1) a consolidated Model Performance Matrix for ARIMA, GARCH, and LSTM models across all sectors and regimes of volatility; (2) a functional prototype for the Dash-based visualization dashboard with interactive event filtering and drill-down windows, as well as dynamic chart updates; and (3) a user-centered guide to the features and data sources used in the visualization, as well as an explanation of key visualizations. Additionally, the next progress report will include a preliminary version of the “Portfolio Diversification Insights” section with an overview of correlation patterns across sectors.
+The next progress report will include the following elements: (1) a consolidated Model Performance Matrix for ARIMA, GARCH, and LSTM models across all sectors and regimes of volatility; (2) a functional prototype for the Dash-based visualization dashboard with interactive event filtering and drill-down windows, as well as dynamic chart updates; and (3) documentation of the visualizations and practical guidance on extracting takeaways and interpretations. Additionally, the next progress report will include a preliminary version of the “Portfolio Diversification Insights” section with an overview of correlation patterns across sectors.
 
 \section{Conclusion}
 
@@ -170,7 +170,7 @@ Our findings show that a simple ARIMA(1,0,1) baseline currently outperforms the 
 
 
 \subsection{Areas Requiring Further Work}
-The area that requires further work is optimizing the user experience for the dashboard. The challenge is to present the high-dimensional data in an "intuitive drill down" manner. Another area for further work is to refine the design of the LSTM architecture in order to incorporate the "Event Category" as a categorical feature in an optimal manner.
+The area that requires further work is optimizing the user experience for the dashboard. The challenge is to present the high-dimensional data in an "intuitive drill down" manner. Another area for further work is to refine the design of the LSTM architecture in order to incorporate the "Event Category" as a categorical feature in an optimal manner. Additionally we have to address the apparent undertraining of the LSTM approach by incorporating additional epochs into our dataset.
 
 \pagebreak
 

@@ -1,6 +1,6 @@
 """
 Interactive Dashboard: Sector Analysis & Forecasting
-DATA 501 Capstone — Frese, Reyes González, Elbouni
+DATA 501 Capstone --- Frese, Reyes Gonzalez, Elbouni
 
 Enhanced with Dash Mantine Components for a professional aesthetic.
 """
@@ -50,7 +50,7 @@ if os.path.exists(PREDS_PATH):
         preds_loaded = True
         print("Loaded model_predictions.csv")
     else:
-        print("model_predictions.csv missing 'garch_vol' — regenerating on-the-fly.")
+        print("model_predictions.csv missing 'garch_vol' --- regenerating on-the-fly.")
 
 if not preds_loaded:
     print("Generating ARIMA + GARCH predictions (LSTM unavailable).")
@@ -96,7 +96,7 @@ if not preds_loaded:
     preds_df.to_csv(PREDS_PATH, index=False)
     print(f"ARIMA + GARCH predictions saved to {PREDS_PATH}")
 
-# ── Event definitions with categories ────────────────────────────────────────
+# -- Event definitions with categories ----------------------------------------
 EVENTS = [
     {"date": "2008-09-15", "label": "Lehman Brothers Bankruptcy",
         "category": "Geopolitical"},
@@ -106,7 +106,7 @@ EVENTS = [
         "category": "Geopolitical"},
     {"date": "2015-08-11", "label": "China Yuan Devaluation",
         "category": "Geopolitical"},
-    {"date": "2015-11-27", "label": "Start of 2015–2016 Oil Glut",
+    {"date": "2015-11-27", "label": "Start of 2015--2016 Oil Glut",
         "category": "Geopolitical"},
     {"date": "2016-06-23", "label": "Brexit Referendum",
         "category": "Geopolitical"},
@@ -216,7 +216,7 @@ app.layout = dmc.MantineProvider(
                                         dmc.Badge(
                                             "DATA 501 Capstone", color="indigo", variant="light", size="lg"),
                                         dmc.Badge(
-                                            "2005–2026", color="cyan", variant="light", size="lg"),
+                                            "2005--2026", color="cyan", variant="light", size="lg"),
                                         dmc.Badge("ARIMA", color="teal",
                                                   variant="light", size="lg"),
                                         dmc.Badge("LSTM", color="green",
@@ -242,7 +242,7 @@ app.layout = dmc.MantineProvider(
                                             style={"maxWidth": "800px"}
                                         ),
                                         dmc.Text(
-                                            "⚠ All model outputs are for analytical and educational purposes only. They do not constitute trading recommendations. Financial markets are inherently unpredictable and past performance is not indicative of future results.",
+                                            " All model outputs are for analytical and educational purposes only. They do not constitute trading recommendations. Financial markets are inherently unpredictable and past performance is not indicative of future results.",
                                             c="dimmed",
                                             size="xs",
                                             fs="italic",
@@ -251,7 +251,7 @@ app.layout = dmc.MantineProvider(
                                     ]
                                 ),
                                 dmc.Text(
-                                    "Ashton Frese, Karen Reyes González, Wilbur Elbouni",
+                                    "Ashton Frese, Karen Reyes Gonzalez, Wilbur Elbouni",
                                     size="sm",
                                     fw=500,
                                     c="dimmed",
@@ -291,7 +291,7 @@ app.layout = dmc.MantineProvider(
                             ]
                         ),
 
-                        # ── Tab 1: Price & Event Overlay ─────────────────────
+                        # -- Tab 1: Price & Event Overlay ---------------------
                         dmc.TabsPanel(
                             value="overlay",
                             children=[
@@ -378,7 +378,7 @@ app.layout = dmc.MantineProvider(
                                               style={"height": "550px"})
                                 ]),
                                 dmc.Text(
-                                    "30-day annualized rolling volatility (σ × √252) for each sector. Vertical lines mark major macroeconomic events. Spikes indicate elevated uncertainty around shocks.",
+                                    "30-day annualized rolling volatility (sigma x sqrt252) for each sector. Vertical lines mark major macroeconomic events. Spikes indicate elevated uncertainty around shocks.",
                                     size="sm", c="dimmed", ta="center", mt="md"
                                 )
                             ]
@@ -428,7 +428,7 @@ app.layout = dmc.MantineProvider(
                         ),
 
 
-                        # ── Tab 4: Model Performance ──────────────────────────
+                        # -- Tab 4: Model Performance --------------------------
                         dmc.TabsPanel(
                             value="performance",
                             children=[
@@ -452,13 +452,13 @@ app.layout = dmc.MantineProvider(
                                               style={"height": "700px"})
                                 ]),
                                 dmc.Text(
-                                    "This backtest evaluates model accuracy on the 2024–2026 validation period. Panel 1 compares ARIMA and LSTM return predictions against actual results, while Panel 2 compares GARCH(1,1) volatility with actual 30-day rolling vol.",
+                                    "This backtest evaluates model accuracy on the 2024--2026 validation period. Panel 1 compares ARIMA and LSTM return predictions against actual results, while Panel 2 compares GARCH(1,1) volatility with actual 30-day rolling vol.",
                                     size="sm", c="dimmed", ta="center", mt="md"
                                 )
                             ]
                         ),
 
-                        # ── Tab 5: Rolling Correlation ────────────────────────
+                        # -- Tab 5: Rolling Correlation ------------------------
                         dmc.TabsPanel(
                             value="corr",
                             children=[
@@ -485,7 +485,7 @@ app.layout = dmc.MantineProvider(
                                                       style={"height": "500px"})
                                         ]),
                                         dmc.Text(
-                                            "This chart displays the rolling Pearson correlation between sector returns and the Federal Funds rate. Each point on the line represents the relationship over the preceding window (3, 6, or 12 months), illustrating how sector sensitivity to monetary policy shifts over the 2005–2026 period.",
+                                            "This chart displays the rolling Pearson correlation between sector returns and the Federal Funds rate. Each point on the line represents the relationship over the preceding window (3, 6, or 12 months), illustrating how sector sensitivity to monetary policy shifts over the 2005--2026 period.",
                                             size="sm", c="dimmed", ta="center", mt="md"
                                         )
                                     ]
@@ -493,7 +493,7 @@ app.layout = dmc.MantineProvider(
                             ]
                         ),
 
-                        # ── Tab 6: Sector Relationships ──────────────────────
+                        # -- Tab 6: Sector Relationships ----------------------
                         dmc.TabsPanel(
                             value="relationships",
                             children=[
@@ -588,7 +588,7 @@ app.layout = dmc.MantineProvider(
                             ]
                         ),
 
-                        # ── Tab 7: Future Outlook ─────────────────────────────
+                        # -- Tab 7: Future Outlook -----------------------------
                         dmc.TabsPanel(
                             value="future",
                             children=[
@@ -640,7 +640,7 @@ app.layout = dmc.MantineProvider(
 )
 
 
-# ── Callbacks ─────────────────────────────────────────────────────────────────
+# -- Callbacks -----------------------------------------------------------------
 
 @app.callback(
     Output("overlay-chart", "figure"),
@@ -731,7 +731,7 @@ def update_drilldown(event_date_str):
     line_fig.add_annotation(x=0, y=1.05, yref="paper", text="Event", showarrow=False,
                             font=dict(color="red", size=10))
     line_fig.update_layout(
-        title=f"Sector Prices — 22 Days Before & After Event<br><sub>{label}</sub>",
+        title=f"Sector Prices --- 22 Days Before & After Event<br><sub>{label}</sub>",
         xaxis_title="Trading Days Relative to Event",
         yaxis_title="Normalized Price (Event = 100)",
         legend_title="", margin=dict(t=80, b=80, l=110, r=40),
@@ -750,7 +750,7 @@ def update_forecast(sector):
     sec_preds = preds_df[preds_df["sector"] == sector].copy()
     sec_preds = sec_preds.sort_values("date")
 
-    # Identify "shock" days — defined as top 10% of rolling volatility in the test period
+    # Identify "shock" days --- defined as top 10% of rolling volatility in the test period
     full_series = df[f"{sector}_log_ret"].fillna(0)
     actual_vol = (full_series.rolling(30).std() * np.sqrt(252))
     plot_vol = actual_vol.loc[sec_preds["date"]]
@@ -763,12 +763,12 @@ def update_forecast(sector):
         row_heights=[0.6, 0.4],
         vertical_spacing=0.06,
         subplot_titles=(
-            f"{sector} Returns — Model Performance (ARIMA vs LSTM)",
-            f"{sector} Volatility — Model Performance (GARCH vs Actual)",
+            f"{sector} Returns --- Model Performance (ARIMA vs LSTM)",
+            f"{sector} Volatility --- Model Performance (GARCH vs Actual)",
         ),
     )
 
-    # ── Row 1: Returns ────────────────────────────────────────────────────────
+    # -- Row 1: Returns --------------------------------------------------------
     fig.add_trace(go.Scatter(
         x=sec_preds["date"], y=sec_preds["actual"],
         name="Actual Return", line=dict(color="black", width=1, dash="dot"),
@@ -783,7 +783,7 @@ def update_forecast(sector):
             name="LSTM", line=dict(color="#d62728", width=1.5),
         ), row=1, col=1)
 
-    # ── Row 2: Volatility ─────────────────────────────────────────────────────
+    # -- Row 2: Volatility -----------------------------------------------------
     fig.add_trace(go.Scatter(
         x=plot_vol.index, y=plot_vol.values,
         name="Actual Vol (30-day)", line=dict(color="black", width=1, dash="dot"),
