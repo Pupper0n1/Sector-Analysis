@@ -1,0 +1,19 @@
+# Everything needed to run the Jupyter notebooks (includes dashboard deps)
+-r requirements.txt
+
+# Visualization
+matplotlib>=3.8.0
+
+# Machine Learning / Deep Learning
+scikit-learn>=1.4.0
+tensorflow>=2.16.0
+
+# Data Acquisition
+requests>=2.31.0
+SPARQLWrapper>=2.0.0
+
+# Jupyter
+ipykernel>=6.29.0
+nbformat>=4.2.0
+ipywidgets>=8.0.0
+nbstripout>=0.7.1

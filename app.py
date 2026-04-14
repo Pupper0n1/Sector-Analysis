@@ -123,6 +123,15 @@ events_df["date"] = pd.to_datetime(events_df["date"])
 # The five sector ETFs we're analyzing
 SECTORS = ["XLK", "XLE", "XLF", "XLV", "XLI"]
 
+# Human-readable sector names for display
+SECTOR_NAMES = {
+    "XLK": "Technology (XLK)",
+    "XLE": "Energy (XLE)",
+    "XLF": "Financials (XLF)",
+    "XLV": "Healthcare (XLV)",
+    "XLI": "Industrials (XLI)",
+}
+
 # Consistent colors for each sector across all charts
 SECTOR_COLORS = {
     "XLK": "#1f77b4", "XLE": "#ff7f0e", "XLF": "#2ca02c",
@@ -161,7 +170,7 @@ def get_event_vlines(fig, filtered_events, yref="paper"):
 app = dash.Dash(__name__)
 app.title = "Sector Analysis Dashboard"
 
-SECTOR_OPTIONS = [{"label": s, "value": s} for s in SECTORS]
+SECTOR_OPTIONS = [{"label": SECTOR_NAMES[s], "value": s} for s in SECTORS]
 CATEGORY_OPTIONS = [
     {"label": "All",          "value": "All"},
     {"label": "Monetary",     "value": "Monetary"},
@@ -235,7 +244,7 @@ app.layout = dmc.MantineProvider(
                                     gap=4,
                                     children=[
                                         dmc.Text(
-                                            "Analyzing historical shocks, cross-sector relationships, and projecting future volatility for XLK, XLE, XLF, XLV, and XLI.",
+                                            "Analyzing historical shocks, cross-sector relationships, and projecting future volatility for Technology (XLK), Energy (XLE), Financials (XLF), Healthcare (XLV), and Industrials (XLI).",
                                             c="dimmed",
                                             size="md",
                                             mt="md",
@@ -438,7 +447,7 @@ app.layout = dmc.MantineProvider(
                                             dmc.Select(
                                                 id="forecast-sector",
                                                 label="Select Sector for Backtest",
-                                                data=SECTORS,
+                                                data=SECTOR_OPTIONS,
                                                 value="XLK",
                                                 style={
                                                     "maxWidth": "400px"}
@@ -598,7 +607,7 @@ app.layout = dmc.MantineProvider(
                                             dmc.Select(
                                                 id="future-sector",
                                                 label="Select Sector",
-                                                data=SECTORS,
+                                                data=SECTOR_OPTIONS,
                                                 value="XLK",
                                             )
                                         ]),
@@ -659,7 +668,7 @@ def update_overlay(sectors, category):
     for s in sectors:
         fig.add_trace(go.Scatter(
             x=norm.index, y=norm[f"{s}_close"],
-            name=s, line=dict(color=SECTOR_COLORS[s], width=1.5),
+            name=SECTOR_NAMES[s], line=dict(color=SECTOR_COLORS[s], width=1.5),
         ))
 
     filtered = events_df if category == "All" else events_df[events_df["category"] == category]
@@ -699,7 +708,7 @@ def update_drilldown(event_date_str):
     # Bar: 30-day cumulative log returns
     cum_rets = {s: post[f"{s}_log_ret"].sum() for s in SECTORS}
     bar_fig = go.Figure(go.Bar(
-        x=list(cum_rets.keys()),
+        x=[SECTOR_NAMES[s] for s in cum_rets.keys()],
         y=list(cum_rets.values()),
         marker_color=[SECTOR_COLORS[s] for s in SECTORS],
         text=[f"{v:.3f}" for v in cum_rets.values()],
@@ -724,7 +733,7 @@ def update_drilldown(event_date_str):
         x_vals = list(range(-len(pre), len(post_prices)))
         line_fig.add_trace(go.Scatter(
             x=x_vals, y=normed,
-            name=s, line=dict(color=SECTOR_COLORS[s], width=2),
+            name=SECTOR_NAMES[s], line=dict(color=SECTOR_COLORS[s], width=2),
         ))
     line_fig.add_hline(y=100, line_dash="dot", line_color="gray", opacity=0.5)
     line_fig.add_vline(x=0, line_dash="dash", line_color="red", opacity=0.6)
@@ -763,8 +772,8 @@ def update_forecast(sector):
         row_heights=[0.6, 0.4],
         vertical_spacing=0.06,
         subplot_titles=(
-            f"{sector} Returns — Model Performance (ARIMA vs LSTM)",
-            f"{sector} Volatility — Model Performance (GARCH vs Actual)",
+            f"{SECTOR_NAMES[sector]} Returns — Model Performance (ARIMA vs LSTM)",
+            f"{SECTOR_NAMES[sector]} Volatility — Model Performance (GARCH vs Actual)",
         ),
     )
 
@@ -852,7 +861,7 @@ def update_corr(window):
         corr = corr.fillna(0)
         fig.add_trace(go.Scatter(
             x=corr.index, y=corr,
-            name=s, line=dict(color=SECTOR_COLORS[s], width=1.5),
+            name=SECTOR_NAMES[s], line=dict(color=SECTOR_COLORS[s], width=1.5),
         ))
     fig.add_hline(y=0, line_dash="dot", line_color="gray", opacity=0.5)
     window_label = {63: "3-Month", 126: "6-Month", 252: "12-Month"}[window]
@@ -917,7 +926,7 @@ def update_heatmap(start_year, start_month, end_year, end_month, regime):
 
     # Calculate average correlation PER SECTOR (exclude self-correlation)
     sector_avgs = (corr_matrix.sum(axis=1) - 1) / (len(SECTORS) - 1)
-    new_labels = [f"{s}<br>(Avg: {sector_avgs[s]:.2f})" for s in SECTORS]
+    new_labels = [f"{SECTOR_NAMES[s]}<br>(Avg: {sector_avgs[s]:.2f})" for s in SECTORS]
 
     fig = go.Figure(data=go.Heatmap(
         z=corr_matrix.values,
@@ -1000,7 +1009,7 @@ def update_future(sector, horizon):
 
     start_view = last_date - pd.DateOffset(years=2)
     fig.update_layout(
-        title=f"{sector} Future Price Projection ({horizon} Trading Days)",
+        title=f"{SECTOR_NAMES[sector]} Future Price Projection ({horizon} Trading Days)",
         xaxis_title="Date", yaxis_title="ETF Price ($)",
         hovermode="x unified", template="plotly_white",
         margin=dict(r=30),
@@ -1033,7 +1042,7 @@ def update_vol(sectors, category):
         vol = df[f"{s}_log_ret"].rolling(30).std() * np.sqrt(252)
         fig.add_trace(go.Scatter(
             x=vol.index, y=vol,
-            name=s, line=dict(color=SECTOR_COLORS[s], width=1.5),
+            name=SECTOR_NAMES[s], line=dict(color=SECTOR_COLORS[s], width=1.5),
         ))
 
     # Overlay event lines, filtered by the selected category
